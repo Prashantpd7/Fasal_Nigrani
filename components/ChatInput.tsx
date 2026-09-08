@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/I18nProvider";
-import { MicIcon, SendIcon } from "./icons";
+import { ImageIcon, MicIcon, SendIcon } from "./icons";
 
 /**
  * §13 ChatInput: large text field + visible mic (Web Speech API) for voice.
@@ -33,9 +33,14 @@ function getSpeechRecognition(): SpeechRecognitionLike | null {
 export default function ChatInput({
   onSend,
   disabled,
+  onAttach,
+  attachBusy = false,
 }: {
   onSend: (text: string) => void;
   disabled: boolean;
+  /** Optional: lets the farmer attach a crop photo for analysis. */
+  onAttach?: (file: File) => void;
+  attachBusy?: boolean;
 }) {
   const { t, lang } = useI18n();
   const [text, setText] = useState("");
@@ -43,6 +48,7 @@ export default function ChatInput({
   const [voiceError, setVoiceError] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -94,11 +100,26 @@ export default function ChatInput({
     }
   };
 
+  const attachFile = (file: File | undefined | null) => {
+    if (!file || !onAttach) return;
+    onAttach(file);
+    if (attachRef.current) attachRef.current.value = "";
+  };
+
   return (
-    <div className="sticky bottom-0 -mx-4 border-t border-earth/10 bg-bg/95 px-4 pb-3 pt-2 backdrop-blur">
+    <div className="sticky bottom-[76px] -mx-4 border-t border-earth/10 bg-bg/95 px-4 pb-3 pt-2 backdrop-blur">
       {voiceError ? (
         <p className="mb-1.5 text-[0.85rem] font-semibold text-warning">
           {t("chat.voiceUnsupported")}
+        </p>
+      ) : null}
+      {attachBusy ? (
+        <p
+          role="status"
+          className="attention-pulse mb-1.5 flex items-center gap-1.5 text-[0.9rem] font-bold text-primary"
+        >
+          <ImageIcon size={16} />
+          {t("chat.photoAnalyzing")}
         </p>
       ) : null}
       {listening ? (
@@ -117,6 +138,17 @@ export default function ChatInput({
           submit(text);
         }}
       >
+        {onAttach ? (
+          <button
+            type="button"
+            aria-label={t("chat.attachPhoto")}
+            onClick={() => attachRef.current?.click()}
+            disabled={disabled || attachBusy}
+            className="flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full border border-earth/25 bg-surface text-earth transition-colors hover:bg-earth-light/60 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <ImageIcon size={22} />
+          </button>
+        ) : null}
         <button
           type="button"
           aria-label={t("chat.micAlt")}
@@ -148,6 +180,13 @@ export default function ChatInput({
           <SendIcon size={20} />
         </button>
       </form>
+      <input
+        ref={attachRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => attachFile(e.target.files?.[0])}
+      />
     </div>
   );
 }

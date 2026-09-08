@@ -16,7 +16,8 @@ import type { WeatherPayload } from "@/lib/types";
  * live behaviour can never diverge.
  */
 
-const OM_URL = "https://api.open-meteo.com/v1/forecast";
+const OM_URL =
+  process.env.OPEN_METEO_BASE_URL ?? "https://api.open-meteo.com/v1/forecast";
 
 export class WeatherFetchError extends Error {}
 
@@ -33,9 +34,9 @@ async function fetchOpenMeteo(
     latitude: String(lat),
     longitude: String(lon),
     current:
-      "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m",
+      "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,cloud_cover,precipitation",
     hourly:
-      "temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m",
+      "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,cloud_cover",
     daily:
       "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max",
     forecast_hours: "48",
@@ -70,6 +71,9 @@ async function fetchOpenMeteo(
     precipProb: asNumber(hourly.precipitation_probability?.[i]),
     precipitation: asNumber(hourly.precipitation?.[i]),
     windKmh: asNumber(hourly.wind_speed_10m?.[i]),
+    apparentTemp: asNumber(hourly.apparent_temperature?.[i]),
+    windDir: asNumber(hourly.wind_direction_10m?.[i]),
+    cloudCover: asNumber(hourly.cloud_cover?.[i]),
   }));
 
   const dtimes = (daily.time ?? []) as string[];
@@ -89,6 +93,10 @@ async function fetchOpenMeteo(
       humidity: asNumber(cur.relative_humidity_2m),
       windKmh: asNumber(cur.wind_speed_10m),
       code: Math.round(asNumber(cur.weather_code)),
+      apparentTemp: asNumber(cur.apparent_temperature),
+      windDir: asNumber(cur.wind_direction_10m),
+      cloudCover: asNumber(cur.cloud_cover),
+      precipitation: asNumber(cur.precipitation),
     },
     hourly: hours,
     daily: days,
@@ -100,7 +108,7 @@ function localizeOutcome(
   lang: Lang,
   locationName: string,
   source: WeatherPayload["source"],
-  days: WeatherDay[]
+  input: WeatherInput
 ): WeatherPayload {
   const { facts, warnings, actions } = outcome;
   const sky = tLang(lang, `weather.code.${facts.skyToday}`);
@@ -116,6 +124,13 @@ function localizeOutcome(
     wind: facts.nowWindKmh,
   });
 
+  const next24h = input.hourly.slice(0, 24);
+  const rainProbMax = next24h.reduce(
+    (m, h) => Math.max(m, h.precipProb ?? 0),
+    0
+  );
+  const rainSum = next24h.reduce((s, h) => s + (h.precipitation ?? 0), 0);
+
   return {
     locationName,
     source,
@@ -125,8 +140,17 @@ function localizeOutcome(
       humidity: facts.nowHumidity,
       windKmh: facts.nowWindKmh,
       group: facts.skyToday,
+      apparentTemp: facts.nowApparentTemp,
+      cloudCover: facts.nowCloudCover,
+      windDir: facts.nowWindDir,
+      precip: facts.nowPrecip,
+      rainProb: facts.nowRainProb,
     },
     today: { tMin: facts.tMin, tMax: facts.tMax },
+    next24: {
+      rainProbMax: Math.round(rainProbMax),
+      rainSum: Math.round(rainSum * 10) / 10,
+    },
     summary,
     nowLine,
     warnings: warnings.map((w) => ({
@@ -134,13 +158,14 @@ function localizeOutcome(
       message: tLang(lang, `weather.rule.warn.${w.id}`, w.params),
     })),
     actions: actions.map((a) => tLang(lang, `weather.rule.act.${a.id}`)),
-    forecast: days.map((d) => ({
+    forecast: input.daily.map((d) => ({
       date: d.date,
       group: wmoToGroup(d.code),
       tMax: Math.round(d.tMax),
       tMin: Math.round(d.tMin),
       precipProb: Math.round(d.precipProb),
       precipSum: Math.round(d.precipSum),
+      windMax: Math.round(d.windMax),
     })),
   };
 }
@@ -154,7 +179,7 @@ export async function getWeather(
 ): Promise<WeatherPayload> {
   const input = await fetchOpenMeteo(lat, lon);
   const outcome = analyzeWeather(input);
-  return localizeOutcome(outcome, lang, locationName, "live", input.daily);
+  return localizeOutcome(outcome, lang, locationName, "live", input);
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +298,14 @@ function buildDemoInput(
     const prob = raining ? 95 - (h % 4) : dayProb[dayIdx];
     const rain =
       raining && h % 3 === 0 ? 4 : raining ? 1.6 : dayIdx === 0 && dayRain[0] > 0 && h % 6 === 0 ? 1.4 : 0;
+    const cloud = raining
+      ? 88 - (h % 5)
+      : humidCool
+        ? 76 - (h % 4)
+        : hotWindy
+          ? 8 + (h % 4)
+          : 12 + ((h % 12) / 12) * 18;
+    const windDir = hotWindy ? 200 + (h % 40) : 160 + ((h % 24) / 24) * 120;
 
     hourly.push({
       time: iso(h),
@@ -281,6 +314,9 @@ function buildDemoInput(
       precipProb: Math.round(prob),
       precipitation: rain,
       windKmh: Math.round(wind),
+      apparentTemp: Math.round(baseTemp + (humidity > 70 ? 1.5 : 0)),
+      windDir: Math.round(windDir % 360),
+      cloudCover: Math.round(Math.min(100, cloud)),
     });
   }
 
@@ -304,6 +340,10 @@ function buildDemoInput(
       humidity: current.humidity,
       windKmh: current.windKmh,
       code: dayCodes[0],
+      apparentTemp: current.apparentTemp,
+      windDir: current.windDir,
+      cloudCover: current.cloudCover,
+      precipitation: current.precipitation,
     },
     hourly: demoHourly,
     daily: days,
@@ -317,7 +357,7 @@ export function getDemoWeather(
   lang: Lang,
   locationName: string
 ): WeatherPayload {
-  const { input, days } = buildDemoInput(placeKey, new Date());
+  const { input } = buildDemoInput(placeKey, new Date());
   const outcome = analyzeWeather(input);
-  return localizeOutcome(outcome, lang, locationName, "demo", days);
+  return localizeOutcome(outcome, lang, locationName, "demo", input);
 }

@@ -24,6 +24,12 @@ export interface WeatherHour {
   precipProb: number;
   precipitation: number;
   windKmh: number;
+  /** Feels-like temperature (°C). */
+  apparentTemp?: number;
+  /** Wind direction in degrees (0=N, 90=E…). */
+  windDir?: number;
+  /** Cloud cover 0–100 %. */
+  cloudCover?: number;
 }
 
 export interface WeatherDay {
@@ -37,7 +43,16 @@ export interface WeatherDay {
 }
 
 export interface WeatherInput {
-  current: { temp: number; humidity: number; windKmh: number; code: number };
+  current: {
+    temp: number;
+    humidity: number;
+    windKmh: number;
+    code: number;
+    apparentTemp?: number;
+    windDir?: number;
+    cloudCover?: number;
+    precipitation?: number;
+  };
   /** Hourly series covering the next 48h. */
   hourly: WeatherHour[];
   /** 7 days starting today. */
@@ -52,6 +67,11 @@ export interface WeatherFacts {
   nowTemp: number;
   nowHumidity: number;
   nowWindKmh: number;
+  nowApparentTemp: number | null;
+  nowWindDir: number | null;
+  nowCloudCover: number | null;
+  nowPrecip: number | null;
+  nowRainProb: number | null;
 }
 
 /** Warning ids (what the weather is doing). */
@@ -122,6 +142,26 @@ export function analyzeWeather(input: WeatherInput): RulesOutcome {
     nowTemp: round(current.temp),
     nowHumidity: round(current.humidity),
     nowWindKmh: round(current.windKmh),
+    nowApparentTemp:
+      typeof current.apparentTemp === "number" && Number.isFinite(current.apparentTemp)
+        ? round(current.apparentTemp)
+        : null,
+    nowWindDir:
+      typeof current.windDir === "number" && Number.isFinite(current.windDir)
+        ? round(current.windDir)
+        : null,
+    nowCloudCover:
+      typeof current.cloudCover === "number" && Number.isFinite(current.cloudCover)
+        ? round(current.cloudCover)
+        : null,
+    nowPrecip:
+      typeof current.precipitation === "number" && Number.isFinite(current.precipitation)
+        ? round(current.precipitation * 10) / 10
+        : null,
+    nowRainProb:
+      hourly.length > 0 && typeof hourly[0].precipProb === "number"
+        ? round(hourly[0].precipProb)
+        : null,
   };
 
   const rainProbNext24 = Math.max(0, ...next24.map((h) => h.precipProb ?? 0));

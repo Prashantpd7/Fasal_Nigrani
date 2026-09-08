@@ -40,20 +40,42 @@ node scripts/check-i18n.mjs   # verifies hi.json/en.json mirror each other + all
 
 ## Features
 
-1. **Weather & Crop Advice** (`/weather`) — pick your location (geolocation or
-   a Rajasthan-first district list), and a **deterministic rules engine**
-   (zero LLM calls) turns current + hourly + 7-day Open-Meteo data into
-   colour-coded warnings ("baarish ho sakti hai"), a 3–7 day forecast strip and
-   a "what to do today" card — always phrased probabilistically.
-2. **Crop Photo Check** (`/photo-check`) — camera-first capture with gallery
-   fallback, client-side dark/blur pre-check *before* any AI spend, then a
-   vision model (Claude/GPT-4o) answers via a **strict JSON contract**: finding,
-   low/medium/high confidence badge, what-to-do / what-to-avoid, and a
-   never-hidden "seek expert" prompt when needed. Photos are resized client-side
-   and never stored.
+1. **Weather & Crop Advice** (`/weather`) — now a real farm monitoring
+   dashboard: geolocation or district pick → draw your field on a satellite
+   map (Leaflet + Esri World Imagery) → choose your crop → dashboard with
+   **real** current + hourly + 7-day Open-Meteo data (temp, feels-like, rain
+   chance, rain mm, wind, humidity, clouds), a **real** NASA GIBS
+   vegetation-health layer (VIIRS/MODIS NDVI decoded from actual satellite
+   tiles, with observation date, "X days ago" honesty and cloud coverage),
+   and   a deterministic rules engine that combines weather + NDVI + crop into
+   hedged insights, ≤3 actions and colour-coded warnings. With an optional
+   **AgroMonitoring** key, the drawn field is registered with OpenWeather's
+   agro API and the dashboard adds **real** field-level NDVI history (with
+   observation date + trend vs the previous observation), the latest
+   satellite image and a soil moisture/temperature **estimate** for the exact
+   polygon. No fabricated values: every number traces to Open-Meteo, NASA
+   GIBS or AgroMonitoring, and failures show "data abhi available nahi hai"
+   instead of fake data. Technical details sit under "Details dekhein".
+2. **Crop Photo Check** (`/photo-check`) — **real AI analysis with no fake
+   results**: capture up to **4 photos** (leaf, stem, fruit, whole plant) from
+   camera or gallery, client-side dark/blur/size checks before any API spend,
+   then **Google Gemini Vision** (default; Claude/GPT-4o also supported)
+   analyses all photos together against a **strict JSON contract**. The result
+   is then **verified against a trusted ICAR/KVK knowledge base** — the LLM
+   never invents disease names, management steps, brands or doses. Output:
+   crop, health, likely problem, **confidence %**, why, recommended action,
+   warning, source, verification level (verified/likely/needs verification),
+   low-confidence "send a clearer photo" guidance, and an optional **Plant.id**
+   second signal (never truth). Without an AI key the page shows a clear
+   "not connected" developer/config message — it never pretends to work.
+   Photos are resized client-side and never stored.
 3. **Ask a Question** (`/chat`) — typed or **spoken** (Web Speech API, graceful
    fallback) questions answered in ≤~80 words with the farmer's weather and
-   latest photo-check attached as context when relevant.
+   latest photo-check attached as context (crop + problem + confidence). The
+   farmer can also **attach a photo right in chat** (same real analysis
+   pipeline) and ask follow-ups about it, and tap **"Get a short summary"** to
+   receive the compact end-of-conversation recap (Crop / Problem / Confidence /
+   Recommendation / Product discussed / Warning / Source).
 
 Non-MVP modules (mandi prices, soil testing, schemes…) appear as disabled
 "coming soon" chips only.
@@ -76,10 +98,45 @@ Copy `.env.example` to `.env`. Options:
 | `OPENAI_API_KEY` | Vision + chat via OpenAI |
 | `OPENAI_MODEL` | Default `gpt-4o-mini` |
 | `OPENAI_BASE_URL` | Optional OpenAI-compatible endpoint |
+| `GEMINI_API_KEY` | **Photo analysis + chat via Google Gemini** (preferred; provider order Gemini → Anthropic → OpenAI) |
+| `GEMINI_MODEL` | Default `gemini-2.5-flash` |
+| `PLANT_ID_API_KEY` / `PLANT_ID_API_URL` | Optional Plant.id second signal (paid; never required) |
+| `OPEN_METEO_BASE_URL` | Optional Open-Meteo mirror/proxy (default: free public endpoint) |
+| `SATELLITE_API_URL` | Optional NASA GIBS mirror/proxy (default: free public endpoint) |
+| `COPERNICUS_CLIENT_ID` / `COPERNICUS_CLIENT_SECRET` | Placeholders — Sentinel-2 (10 m) is **not** wired up yet; see SETUP-REPORT.md |
+| `MOSDAC_API_KEY` | Placeholder — ISRO/MOSDAC is not used (no practical free WMTS/NDVI API) |
+| `AGROMONITORING_API_KEY` | Optional **field-level monitoring** (NDVI history, satellite image, soil estimate for the drawn polygon). Server-side only — never sent to the browser. Without it the dashboard shows an honest "not connected" message. See **SETUP-REPORT-AGRO.md** |
+| `AGROMONITORING_BASE_URL` | Optional AgroMonitoring mirror/proxy (default `https://api.agromonitoring.com/agro/1.0`) |
 
 Keys are read **server-side only** (Next.js API routes) — never shipped to the
-browser. `/api/analyze-photo` and `/api/chat` are rate-limited per IP
-(in-memory) to protect a demo day.
+browser. `/api/analyze-photo`, `/api/chat` and `/api/satellite/status` are
+rate-limited per IP (in-memory) to protect a demo day.
+
+**Photo analysis honesty rules:** no demo fallback — a missing AI key returns
+`503 not_configured` with developer guidance; the LLM only suggests conditions
+which the ICAR/KVK knowledge layer (`lib/server/agricultureKnowledge.ts`)
+verifies; no brands/doses ever; low confidence shows the exact
+"not sufficient for a reliable diagnosis" message; Plant.id (when configured)
+is compared and disagreements are flagged as "verification required".
+See **SETUP-REPORT-PHOTO.md** for the full breakdown.
+
+**Weather & satellite sources (real, free, no key):**
+
+- **Weather:** Open-Meteo (`/api/weather`) — current + hourly + 7-day.
+- **Satellite imagery basemap:** Esri World Imagery tiles (Leaflet).
+- **Vegetation health:** NASA GIBS VIIRS/MODIS NDVI WMTS (`/api/satellite/status`
+  returns layer config + real observation dates; the browser decodes the tiles
+  with the official GIBS colormaps and averages NDVI inside the farm polygon).
+- **Cloud coverage:** NASA GIBS MODIS cloud fraction over the field.
+- **Field-level monitoring (optional):** AgroMonitoring (`/api/agromonitoring`)
+  — real per-polygon NDVI history with observation dates + trend, latest
+  satellite image, and a soil moisture/temperature **estimate** (model, not a
+  field probe — clearly labelled). The key stays server-side; images are
+  re-served through our own proxy so `?appid=` never reaches the browser.
+
+Nothing here is simulated: if a source is unreachable the UI says so honestly.
+See **SETUP-REPORT.md** for the full breakdown (what is real vs derived, what
+still needs registration, and what to test before a demo).
 
 ---
 
@@ -91,18 +148,28 @@ Single Next.js (App Router) full-stack app — no separate backend:
 app/
   page.tsx  weather/  photo-check/  chat/        # 4 client pages
   api/weather/route.ts                            # Open-Meteo -> rules engine
+  api/satellite/status/route.ts                   # NASA GIBS layer config + dates
+  api/agromonitoring/route.ts + image/route.ts    # AgroMonitoring: polygon + real NDVI/imagery/soil (key server-side)
   api/analyze-photo/route.ts                      # vision LLM (strict JSON)
   api/chat/route.ts                               # assistant w/ context
-components/        # BigActionCard, LanguageSwitcher, Weather*, ForecastStrip,
-                   # CameraCapture, AnalysisResultCard, ConfidenceBadge,
-                   # ChatBubble/ChatInput, shared Loading/Error/EmptyState…
+components/
+  farm/FarmMap.tsx, FarmDashboard.tsx, CropPicker.tsx   # farm dashboard UI
+  BigActionCard, LanguageSwitcher, Weather*, ForecastStrip,
+  CameraCapture, AnalysisResultCard, ConfidenceBadge,
+  ChatBubble/ChatInput, shared Loading/Error/EmptyState…
 lib/
-  weatherRules.ts        # pure deterministic thresholds engine (no LLM)
+  weatherRules.ts        # pure deterministic weather thresholds engine (no LLM)
+  agriculture.ts         # pure agri engine: weather + NDVI + crop -> insights
+  farmGeometry.ts        # shoelace area, point-in-polygon, tile helpers
+  crops.ts               # bilingual crop catalog + conservative crop profiles
+  satelliteStats.ts      # client: decodes real GIBS NDVI/cloud tiles in-polygon
   i18n.ts / I18nProvider.tsx
   geo.ts                 # Rajasthan-first location list (hi/en)
   clientImage.ts         # blur/dark pre-check + resize/compress
-  clientStore.ts         # offline weather cache + cross-feature context
-  server/weatherService.ts, ai.ts, prompts.ts, analysis.ts, demo.ts, rateLimit.ts
+  clientStore.ts         # weather/satellite/farm cache + cross-feature context
+  server/weatherService.ts, satelliteService.ts, agromonitoring.ts,
+  cropAnalysis.ts, agricultureKnowledge.ts, plantId.ts, ai.ts, prompts.ts,
+  demo.ts, rateLimit.ts
 locales/hi.json  locales/en.json      # farmer-register Hindi + English, mirrored
 scripts/check-i18n.mjs
 ```
@@ -110,6 +177,12 @@ scripts/check-i18n.mjs
 - **Weather:** Open-Meteo (free, keyless) → `analyzeWeather()` literal
   thresholds → localized payload. `DEMO_MODE=true` runs the *same* engine on
   deterministic sample scenarios so live/demo behaviour never diverges.
+- **Farm dashboard:** location → Leaflet field polygon (area in ha/acres) →
+  crop picker → dashboard. NDVI/cloud statistics are measured client-side
+  from real NASA GIBS tiles inside the polygon using the official colormaps;
+  the agri rules engine (`lib/agriculture.ts`) only hedges with that real
+  data — no LLM, no invented numbers. Satellites are never called "live":
+  the UI shows the observation date and "X days ago" when imagery is old.
 - **AI:** provider-agnostic REST client (Anthropic or OpenAI) inside
   `lib/server/ai.ts`; strict vision JSON contract in `lib/server/prompts.ts`;
   malformed JSON is silently retried once. No key ⇒ deterministic demo

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { Lang } from "@/lib/i18n";
 import type { ChatMessage } from "@/lib/types";
 import { activeProvider, completeText, AIError } from "@/lib/server/ai";
-import { buildChatSystemPrompt } from "@/lib/server/prompts";
+import { buildChatSystemPrompt, SUMMARY_INSTRUCTION } from "@/lib/server/prompts";
 import { getDemoChatReply } from "@/lib/server/demo";
 import { rateLimit, clientKey } from "@/lib/server/rateLimit";
 
@@ -19,7 +19,15 @@ interface ChatRequestBody {
   messages?: unknown;
   lang?: unknown;
   weather?: { locationName?: string; summary?: string } | null;
-  photo?: { summary?: string } | null;
+  photo?: {
+    summary?: string;
+    crop?: string | null;
+    problem?: string | null;
+    confidencePct?: number | null;
+    source?: string | null;
+  } | null;
+  /** When true, produce the short end-of-conversation summary instead. */
+  summarize?: unknown;
 }
 
 /**
@@ -65,8 +73,29 @@ export async function POST(request: Request) {
   const weatherLocation =
     body.weather && body.weather.locationName ? body.weather.locationName : null;
   const photoSummary = body.photo && body.photo.summary ? body.photo.summary : null;
+  const photoCrop =
+    body.photo && body.photo.crop ? body.photo.crop : null;
+  const photoProblem =
+    body.photo && body.photo.problem ? body.photo.problem : null;
+  const photoConfidence =
+    body.photo && typeof body.photo.confidencePct === "number"
+      ? body.photo.confidencePct
+      : null;
+  const photoSource =
+    body.photo && body.photo.source ? body.photo.source : null;
+  const summarize = body.summarize === true;
 
   if (activeProvider() === null) {
+    if (summarize) {
+      return NextResponse.json({
+        message:
+          lang === "hi"
+            ? "फ़सल:\nसमस्या:\nभरोसा:\nमहत्वपूर्ण सलाह:\nदवा/उत्पाद:\nचेतावनी:\nस्रोत:\n\n(सारांश तभी मिलेगा जब AI सेवा जुड़ी हो — GEMINI_API_KEY जोड़ें, SETUP-REPORT-PHOTO.md देखें।)"
+            : "Crop:\nProblem:\nConfidence:\nImportant recommendation:\nMedicine/product discussed:\nWarning:\nSource:\n\n(A summary is only possible when the AI service is connected — add GEMINI_API_KEY, see SETUP-REPORT-PHOTO.md.)",
+        demo: true,
+        summary: true,
+      });
+    }
     const reply = getDemoChatReply(lang, lastUser.content, weatherSummary);
     // Let the demo responder reuse the photo context naturally.
     if (photoSummary && !/\b(photo|फोटो)\b/i.test(lastUser.content + reply.message)) {
@@ -80,23 +109,37 @@ export async function POST(request: Request) {
   }
 
   const recent = messages.slice(-HISTORY_LIMIT);
-  const system = buildChatSystemPrompt(lang, {
-    weatherSummary,
-    weatherLocation,
-    photoSummary,
-  });
+  const system = summarize
+    ? SUMMARY_INSTRUCTION
+    : buildChatSystemPrompt(lang, {
+        weatherSummary,
+        weatherLocation,
+        photoSummary,
+        photoCrop,
+        photoProblem,
+        photoConfidence,
+        photoSource,
+      });
+  const turns =
+    recent.length > 0
+      ? recent
+      : [{ role: "user" as const, content: lastUser.content }];
 
   try {
     const raw = await completeText({
       system,
-      messages: recent.map((m) => ({ role: m.role, content: m.content })),
-      maxTokens: 600,
+      messages: turns.map((m) => ({ role: m.role, content: m.content })),
+      maxTokens: summarize ? 400 : 600,
     });
     const cleaned = raw.trim().slice(0, MAX_MESSAGE_LEN);
     if (!cleaned) {
       return NextResponse.json({ error: "server" }, { status: 502 });
     }
-    return NextResponse.json({ message: cleaned, demo: false });
+    return NextResponse.json({
+      message: cleaned,
+      demo: false,
+      ...(summarize ? { summary: true } : {}),
+    });
   } catch (e) {
     return NextResponse.json(
       {

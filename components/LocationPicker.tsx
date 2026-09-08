@@ -96,7 +96,7 @@ export default function LocationPicker({
 
   return (
     <div className="card">
-      <h2 className="flex items-center gap-2 text-[1.1rem] font-extrabold text-ink">
+      <h2 className="flex items-center gap-2 text-[1.06rem] font-extrabold text-ink">
         <MapPinIcon size={20} className="text-primary" />
         {t("weather.locationTitle")}
       </h2>
@@ -121,7 +121,7 @@ export default function LocationPicker({
         </p>
       ) : null}
 
-      <label className="field-label mt-5" htmlFor="place-search">
+      <label className="field-label mt-5 mb-1.5" htmlFor="place-search">
         {t("weather.listTitle")}
       </label>
       <div className="relative">

@@ -8,11 +8,21 @@
  * All helpers are SSR-safe (client components also render on the server).
  */
 import type { Lang } from "./i18n";
-import type { WeatherPayload } from "./types";
+import type {
+  AgroMonitoringData,
+  FarmState,
+  SatelliteStatus,
+  WeatherPayload,
+} from "./types";
 
 const WEATHER_PREFIX = "fn-weather-";
 const META_KEY = "fn-meta";
+const FARM_KEY = "fn-farm";
+const SAT_STATUS_KEY = "fn-sat-status";
+const AGRO_KEY = "fn-agro-";
 const STALE_MS = 1000 * 60 * 60 * 4; // 4h-old snapshot is still useful
+const SAT_STATUS_TTL_MS = 1000 * 60 * 5; // satellite config is global + stable
+const AGRO_TTL_MS = 1000 * 60 * 30; // monitoring snapshot is valid for 30 min
 
 interface Meta {
   lastWeather?: { key: string; lang: Lang } | null;
@@ -111,6 +121,12 @@ export interface PhotoContext {
   summary: string;
   at: number;
   lang: Lang;
+  /** Extra crop-analysis context shared with the chatbot. */
+  crop?: string | null;
+  problem?: string | null;
+  confidencePct?: number | null;
+  source?: string | null;
+  location?: string | null;
 }
 
 export function cachePhotoContext(ctx: PhotoContext): void {
@@ -122,4 +138,88 @@ export function cachePhotoContext(ctx: PhotoContext): void {
 export function readPhotoContext(): PhotoContext | null {
   const meta = readMeta();
   return meta.photo ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Farm dashboard state (location + polygon + crop) — saved so a farmer never
+// has to redraw their field after a reload or network drop (§ Farm).
+// ---------------------------------------------------------------------------
+
+export function cacheFarmState(state: FarmState): void {
+  safeSet(FARM_KEY, JSON.stringify(state));
+}
+
+export function readCachedFarmState(): FarmState | null {
+  const raw = safeGet(FARM_KEY);
+  if (!raw) return null;
+  try {
+    const state = JSON.parse(raw) as FarmState;
+    if (!state || typeof state.label !== "string") return null;
+    if (
+      state.polygon &&
+      (!Array.isArray(state.polygon.ring) || state.polygon.ring.length < 3)
+    ) {
+      state.polygon = null;
+    }
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+/** Satellite layer config (location-independent) — cached to avoid hammering. */
+export function cacheSatelliteStatus(status: SatelliteStatus): void {
+  safeSet(SAT_STATUS_KEY, JSON.stringify({ status, at: Date.now() }));
+}
+
+export function readCachedSatelliteStatus(): SatelliteStatus | null {
+  const raw = safeGet(SAT_STATUS_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { status: SatelliteStatus; at: number };
+    if (!parsed?.status?.ndvi) return null;
+    if (Date.now() - parsed.at > SAT_STATUS_TTL_MS) return null;
+    return parsed.status;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AgroMonitoring state — the AgroMonitoring polygon id for a farm (so we
+// reuse it instead of re-registering) and the last real monitoring payload
+// (so a reload shows the last real numbers instead of refetching constantly).
+// ---------------------------------------------------------------------------
+
+export function cacheAgroPolyId(farmKey: string, polyId: string): void {
+  safeSet(`${AGRO_KEY}poly:${farmKey}`, polyId);
+}
+
+export function readCachedAgroPolyId(farmKey: string): string | null {
+  const raw = safeGet(`${AGRO_KEY}poly:${farmKey}`);
+  if (!raw) return null;
+  return /^[A-Za-z0-9]{8,40}$/.test(raw) ? raw : null;
+}
+
+/** Cache a real AgroMonitoring payload with a freshness TTL. */
+export function cacheAgroMonitoring(
+  farmKey: string,
+  data: AgroMonitoringData
+): void {
+  safeSet(`${AGRO_KEY}data:${farmKey}`, JSON.stringify(data));
+}
+
+export function readCachedAgroMonitoring(
+  farmKey: string
+): AgroMonitoringData | null {
+  const raw = safeGet(`${AGRO_KEY}data:${farmKey}`);
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw) as AgroMonitoringData;
+    if (!data || typeof data.ok !== "boolean") return null;
+    if (Date.now() - data.fetchedAt > AGRO_TTL_MS) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }

@@ -34,8 +34,8 @@ export default function ForecastStrip({ days }: { days: ForecastDay[] }) {
   );
 
   return (
-    <div className="card p-3 sm:p-4">
-      <h2 className="mb-2 px-2 text-[1.05rem] font-extrabold text-ink">
+    <div className="card-sm">
+      <h2 className="mb-2 text-[1.06rem] font-extrabold text-ink">
         {t("weather.forecastTitle")}
       </h2>
       <ul className="flex gap-2 overflow-x-auto pb-1" role="list">

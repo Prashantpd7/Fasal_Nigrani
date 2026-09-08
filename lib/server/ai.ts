@@ -1,13 +1,21 @@
 /**
  * Server-side LLM client (§19, §21, §23). Keys live in env vars ONLY — never
- * shipped to the browser. Two providers are supported with no SDK dependency:
- * Anthropic Claude (default) or an OpenAI-compatible chat API (incl. GPT-4o
- * vision). Whichever key is configured wins; when no key is configured the
- * app runs in DEMO mode (see lib/server/demo.ts) so the product is fully
- * demoable with zero credentials (§34).
+ * shipped to the browser. Three providers are supported with no SDK
+ * dependency:
+ *   1. Google Gemini (default when GEMINI_API_KEY is set — the crop-analysis
+ *      requirement), via the REST generateContent endpoint.
+ *   2. Anthropic Claude (vision-capable).
+ *   3. Any OpenAI-compatible chat API (incl. GPT-4o vision).
+ * Provider priority: Gemini -> Anthropic -> OpenAI. When no key is configured
+ * the AI routes report an honest "not configured" error — the app NEVER fakes
+ * a model reply (photo analysis in particular must not show demo results).
  */
 
-export type Provider = "anthropic" | "openai";
+export type Provider = "anthropic" | "openai" | "google";
+
+export function hasGeminiKey(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY);
+}
 
 export function hasAnthropicKey(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
@@ -18,11 +26,17 @@ export function hasOpenAIKey(): boolean {
 }
 
 export function activeProvider(): Provider | null {
-  // DEMO_MODE=true forces demo even when keys exist; DEMO_MODE=false forces
-  // live and will error without a key. Default = auto (live if any key).
+  // DEMO_MODE=true forces the demo chat responder; DEMO_MODE=false forces live
+  // and will error without a key. Photo analysis NEVER uses demo data — with
+  // no key it returns a clear configuration error instead.
   const mode = process.env.DEMO_MODE;
   if (mode === "true") return null;
-  if (mode === "false") return hasAnthropicKey() ? "anthropic" : "openai";
+  if (mode === "false") {
+    if (hasGeminiKey()) return "google";
+    if (hasAnthropicKey()) return "anthropic";
+    return "openai";
+  }
+  if (hasGeminiKey()) return "google";
   if (hasAnthropicKey()) return "anthropic";
   if (hasOpenAIKey()) return "openai";
   return null;
@@ -35,6 +49,11 @@ interface ChatTurn {
   content: string;
 }
 
+export interface ImagePart {
+  base64: string;
+  mime: string;
+}
+
 /** Plain-text LLM call. Returns the model's raw text. */
 export async function completeText(opts: {
   system: string;
@@ -42,24 +61,149 @@ export async function completeText(opts: {
   maxTokens?: number;
 }): Promise<string> {
   const provider = activeProvider();
-  if (!provider) throw new AIError("no LLM provider configured (demo mode)");
+  if (!provider) throw new AIError("no LLM provider configured");
+  if (provider === "google") return googleGenerate(opts);
   if (provider === "anthropic") return anthropicText(opts);
   return openaiText(opts);
 }
 
-/** Vision call: sends an image plus text to a multimodal model. */
+/** Vision call: sends one or more images plus text to a multimodal model. */
 export async function completeVision(opts: {
   system: string;
   userText: string;
-  imageBase64: string;
-  mime: string;
+  images: ImagePart[];
   maxTokens?: number;
 }): Promise<string> {
   const provider = activeProvider();
-  if (!provider) throw new AIError("no LLM provider configured (demo mode)");
+  if (!provider) throw new AIError("no LLM provider configured");
+  if (provider === "google") return googleVision(opts);
   if (provider === "anthropic") return anthropicVision(opts);
   return openaiVision(opts);
 }
+
+// ---------------------------------------------------------------------------
+// Google Gemini (generateContent REST)
+// ---------------------------------------------------------------------------
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
+
+function geminiModel(): string {
+  // gemini-2.5-flash is deprecated (no longer available to new users);
+  // gemini-3.6-flash is the current supported model. GEMINI_MODEL can
+  // override the default.
+  return process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
+}
+
+async function geminiRequest(opts: {
+  system: string;
+  parts: unknown[];
+  maxTokens?: number;
+}): Promise<string> {
+  const res = await fetch(
+    `${GEMINI_BASE}/models/${geminiModel()}:generateContent?key=${encodeURIComponent(
+      process.env.GEMINI_API_KEY!
+    )}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: opts.system }, ...opts.parts],
+          },
+        ],
+        generationConfig: {
+          maxOutputTokens: opts.maxTokens ?? 1000,
+          temperature: 0.3,
+        },
+      }),
+      signal: AbortSignal.timeout(90_000),
+    }
+  );
+  const j = (await res.json().catch(() => ({}))) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    error?: { message?: string };
+  };
+  if (!res.ok || !j.candidates?.[0]?.content?.parts) {
+    throw new AIError(j.error?.message ?? `Gemini HTTP ${res.status}`);
+  }
+  const text = j.candidates[0].content.parts
+    .map((p) => p.text ?? "")
+    .join("\n")
+    .trim();
+  if (!text) throw new AIError("Gemini empty reply");
+  return text;
+}
+
+async function googleGenerate(opts: {
+  system: string;
+  messages: ChatTurn[];
+  maxTokens?: number;
+}): Promise<string> {
+  const parts = opts.messages.map((m) => ({
+    role: m.role,
+    parts: [{ text: m.content }],
+  }));
+  // Gemini needs alternating roles; flatten system into the first user turn.
+  const contents = [
+    { role: "user", parts: [{ text: opts.system }] },
+    ...parts,
+  ];
+  const res = await fetch(
+    `${GEMINI_BASE}/models/${geminiModel()}:generateContent?key=${encodeURIComponent(
+      process.env.GEMINI_API_KEY!
+    )}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          maxOutputTokens: opts.maxTokens ?? 600,
+          temperature: 0.4,
+        },
+      }),
+      signal: AbortSignal.timeout(90_000),
+    }
+  );
+  const j = (await res.json().catch(() => ({}))) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    error?: { message?: string };
+  };
+  if (!res.ok || !j.candidates?.[0]?.content?.parts) {
+    throw new AIError(j.error?.message ?? `Gemini HTTP ${res.status}`);
+  }
+  const text = j.candidates[0].content.parts
+    .map((p) => p.text ?? "")
+    .join("\n")
+    .trim();
+  if (!text) throw new AIError("Gemini empty reply");
+  return text;
+}
+
+async function googleVision(opts: {
+  system: string;
+  userText: string;
+  images: ImagePart[];
+  maxTokens?: number;
+}): Promise<string> {
+  const parts: unknown[] = [{ text: opts.userText }];
+  for (const img of opts.images) {
+    parts.push({
+      inline_data: { mime_type: img.mime, data: img.base64 },
+    });
+  }
+  return geminiRequest({
+    system: opts.system,
+    parts,
+    maxTokens: opts.maxTokens ?? 1200,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Anthropic Claude
+// ---------------------------------------------------------------------------
 
 async function anthropicText(opts: {
   system: string;
@@ -97,8 +241,7 @@ async function anthropicText(opts: {
 async function anthropicVision(opts: {
   system: string;
   userText: string;
-  imageBase64: string;
-  mime: string;
+  images: ImagePart[];
   maxTokens?: number;
 }): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -110,26 +253,26 @@ async function anthropicVision(opts: {
     },
     body: JSON.stringify({
       model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5",
-      max_tokens: opts.maxTokens ?? 900,
+      max_tokens: opts.maxTokens ?? 1200,
       system: opts.system,
       messages: [
         {
           role: "user",
           content: [
-            {
-              type: "image",
+            ...opts.images.map((img) => ({
+              type: "image" as const,
               source: {
-                type: "base64",
-                media_type: opts.mime,
-                data: opts.imageBase64,
+                type: "base64" as const,
+                media_type: img.mime,
+                data: img.base64,
               },
-            },
+            })),
             { type: "text", text: opts.userText },
           ],
         },
       ],
     }),
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(75_000),
   });
   const j = (await res.json().catch(() => ({}))) as {
     content?: { type: string; text?: string }[];
@@ -144,24 +287,30 @@ async function anthropicVision(opts: {
     .join("\n");
 }
 
+// ---------------------------------------------------------------------------
+// OpenAI-compatible
+// ---------------------------------------------------------------------------
+
 async function openaiChat(opts: {
   system: string;
   messages: ChatTurn[];
-  image?: { base64: string; mime: string };
+  images?: ImagePart[];
   maxTokens?: number;
 }): Promise<string> {
   const content: unknown[] = [];
-  if (opts.image) {
-    content.push(
-      { type: "text", text: opts.system + "\n\n" + (opts.messages[0]?.content ?? "") },
-      {
+  if (opts.images && opts.images.length > 0) {
+    content.push({
+      type: "text",
+      text: opts.system + "\n\n" + (opts.messages[0]?.content ?? ""),
+    });
+    for (const img of opts.images) {
+      content.push({
         type: "image_url",
         image_url: {
-          url: `data:${opts.image.mime};base64,${opts.image.base64}`,
+          url: `data:${img.mime};base64,${img.base64}`,
         },
-      }
-    );
-    opts = { ...opts, system: "" };
+      });
+    }
   }
   const res = await fetch(
     process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1/chat/completions",
@@ -174,14 +323,18 @@ async function openaiChat(opts: {
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
         max_tokens: opts.maxTokens ?? 600,
-        messages: [
-          { role: "system", content: opts.system },
-          ...(opts.image
-            ? [{ role: "user", content }]
-            : opts.messages.map((m) => ({ role: m.role, content: m.content }))),
-        ],
+        messages:
+          opts.images && opts.images.length > 0
+            ? [{ role: "system", content: "" }, { role: "user", content }]
+            : [
+                { role: "system", content: opts.system },
+                ...opts.messages.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                })),
+              ],
       }),
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(75_000),
     }
   );
   const j = (await res.json().catch(() => ({}))) as {
@@ -205,14 +358,13 @@ async function openaiText(opts: {
 async function openaiVision(opts: {
   system: string;
   userText: string;
-  imageBase64: string;
-  mime: string;
+  images: ImagePart[];
   maxTokens?: number;
 }): Promise<string> {
   return openaiChat({
     system: opts.system,
     messages: [{ role: "user", content: opts.userText }],
-    image: { base64: opts.imageBase64, mime: opts.mime },
+    images: opts.images,
     maxTokens: opts.maxTokens,
   });
 }

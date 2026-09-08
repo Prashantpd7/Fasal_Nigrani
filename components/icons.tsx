@@ -259,3 +259,171 @@ export const WindIcon = (p: IconProps) => (
     <path d="M3 12h13a3 3 0 1 1-2.6 4.5M3 16h6.5" />
   </svg>
 );
+
+export const PlusIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const UndoIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+  </svg>
+);
+
+export const TrashIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+  </svg>
+);
+
+export const SatelliteIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 20h16" />
+    <path d="M12 20V9" />
+    <rect x="8" y="3.5" width="8" height="5.5" rx="2" />
+    <path d="M12 3.5V2" />
+  </svg>
+);
+
+export const SprinklerIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M7 21h10" />
+    <path d="M9 21v-6a3 3 0 0 1 6 0v6" />
+    <path d="M12 9V4M9 4h6M12 4v-1" />
+    <path d="M12 15v2" />
+  </svg>
+);
+
+export const CalendarIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4.5" width="18" height="17" rx="3" />
+    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+  </svg>
+);
+
+export const ClockIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 3" />
+  </svg>
+);
+
+export const LayersIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m12 2 9 5-9 5-9-5 9-5Z" />
+    <path d="m3 12 9 5 9-5M3 17l9 5 9-5" />
+  </svg>
+);
+
+export const QuestionMarkIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.2 9a2.9 2.9 0 1 1 4.6 2.4c-1 .7-1.8 1.2-1.8 2.6M12 17.5h.01" />
+  </svg>
+);
+// ===========================================================================
+// Fasal Nigrani v2 — new feature icons (market / soil / schemes)
+// Same hand-rolled style: 24x24, 2px stroke, currentColor, filled where
+// meaningful. No new colours — every icon tints via its CSS `text-*` colour.
+// ===========================================================================
+
+export const RupeeIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M6.5 3.2h11" />
+    <path d="M6.5 3.2v9.4" />
+    <path d="M6.5 8.2c3 .4 5.4 2.2 5.4 5" />
+    <path d="M6.5 12.4h7.9a2.5 2.5 0 0 1 0 5H6.5" />
+    <path d="M6.5 17.4c3.4 1.4 5.8 3.4 7.6 5" />
+  </svg>
+);
+
+export const BasketIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 2.5v2.2M8.8 5.4h6.4" />
+    <path d="M5.5 6.2l1.8 11.4h11.4l1.8-11.4Z" fill="currentColor" stroke="none" />
+    <path d="M6.3 8.2h11.4M7.1 10.6h11.4M8 12.6h11.4M8.8 14.6h11.4" />
+  </svg>
+);
+
+export const SoilIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M4.5 10.2c1-3.2 3.9-4.8 7.5-4.8s6.5 1.6 7.5 4.8" />
+    <path d="M4 12.5h16M7 16.5h10M8.4 20.2h7.2" />
+  </svg>
+);
+
+export const GovernmentIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M3 20.5h18" />
+    <path d="M4.4 12.2h15.2" />
+    <path d="M5.6 14.8h12.8" />
+    <path d="M12 2.3l.9 2.2h8.2M2.9 7.4v4.8M21.1 7.4v4.8M5.2 2.3v13.5M18.8 2.3v13.5" />
+  </svg>
+);
+
+export const FlaskIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M9.3 3.2h5.4M12 3.2v4.6l6.6 10.1a2.6 2.6 0 0 1-2.2 3.9H7.6a2.6 2.6 0 0 1-2.2-3.9L12 7.8" />
+    <path d="M7.9 15h8.2" />
+    <path d="M9.4 18h5.2" />
+  </svg>
+);
+
+export const DocumentIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 4.8h16a2.6 2.6 0 0 1 2.6 0v15.2a2.6 2.6 0 0 1-2.6 0H4Z" />
+    <path d="M6.4 9.4h11.2M6.4 12.6h11.2M6.4 15.8h11.2" />
+    <path d="M18.2 8.2l1.8 1.4" />
+  </svg>
+);
+
+export const ExternalIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M14 3.2h6.8V10" />
+    <path d="M20.8 3.2l-8.6 8.6" />
+    <path d="M10.4 5.4H6.2a2 2 0 0 0-2 2v10.4a2 2 0 0 0 2 2h10.4a2 2 0 0 0 2-2v-4.2" />
+  </svg>
+);
+
+export const TrendUpIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M3.2 16.8l5.6-5.6 4 4L20.8 7.6" />
+    <path d="M15.2 7.6h5.6v5.6" />
+  </svg>
+);
+
+export const TrendDownIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M3.2 7.2l5.6 5.6 4-4 8 8.4" />
+    <path d="M15.2 17.2h5.6v-5.6" />
+  </svg>
+);
+
+export const TrendFlatIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M3.2 12h17.6" />
+    <path d="M15.2 8.8l4.8 3.2-4.8 3.2" />
+  </svg>
+);
+
+export const LeverIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 19.8a7.4 7.4 0 1 1 0-14.8 7.4 7.4 0 0 1 0 14.8Z" />
+    <path d="M12 19.8v-11.8" />
+    <path d="M5.5 9.8h13" />
+    <path d="M11 9.8v-3.8M11 5.9h-3" />
+  </svg>
+);
+
+export const MicroscopeIcon = (p: IconProps) => (
+  <svg {...base(p)} fill="currentColor" stroke="none">
+    <path d="M6.5 20.4h11" />
+    <path d="M9.5 20.4V14" />
+    <path d="M9.5 14l5.2-3.6" />
+    <path d="M12.4 10.4l3.9-2.7 2.1 2.5-3.9 2.7z" />
+    <path d="M13.6 6.4l2.3-1.6 1.9 2.3-2.3 1.6z" />
+  </svg>
+);

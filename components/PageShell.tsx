@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import Header from "./Header";
+import NavBar from "./NavBar";
 import { ArrowLeftIcon } from "./icons";
 import { useI18n } from "@/lib/I18nProvider";
 
@@ -28,10 +29,10 @@ export default function PageShell({
   return (
     <div className="flex min-h-dvh flex-col">
       <Header />
-      <main className="mx-auto flex w-full max-w-[600px] flex-1 flex-col px-4 pb-12 pt-4">
+      <main className="mx-auto flex w-full max-w-[600px] flex-1 flex-col px-4 pb-20 pt-4">
         <Link
           href={backHref}
-          className="mb-3 inline-flex min-h-11 w-fit cursor-pointer items-center gap-1.5 rounded-full px-2 text-[0.95rem] font-semibold text-primary hover:bg-primary-light/60"
+          className="mb-3 inline-flex h-11 w-fit cursor-pointer items-center gap-1.5 rounded-full px-3 text-[0.95rem] font-semibold text-primary hover:bg-primary-light/60"
         >
           <ArrowLeftIcon size={18} />
           {t("common.back")}
@@ -46,6 +47,7 @@ export default function PageShell({
         ) : null}
         <div className="mt-5 flex flex-col gap-4">{children}</div>
       </main>
+      <NavBar />
     </div>
   );
 }

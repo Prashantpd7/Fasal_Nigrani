@@ -58,14 +58,14 @@ export default function WeatherSummaryCard({
       </div>
 
       <dl className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-2xl bg-bg px-2 py-2.5 text-center">
+        <div className="stat-pill">
           <dt className="sr-only">{dict.weather.humidityPct}</dt>
           <dd className="inline-flex items-center gap-1 text-[1.05rem] font-extrabold text-info">
             <DropletIcon size={18} />
             {weather.current.humidity}%
           </dd>
         </div>
-        <div className="rounded-2xl bg-bg px-2 py-2.5 text-center">
+        <div className="stat-pill">
           <dt className="sr-only">{dict.weather.windKmh}</dt>
           <dd className="inline-flex items-center gap-1 text-[1.05rem] font-extrabold text-earth">
             <WindIcon size={18} />
@@ -73,7 +73,7 @@ export default function WeatherSummaryCard({
             <span className="text-[0.78rem] font-bold">km/h</span>
           </dd>
         </div>
-        <div className="rounded-2xl bg-bg px-2 py-2.5 text-center">
+        <div className="stat-pill">
           <dt className="sr-only">{dict.weather.rainProb}</dt>
           <dd
             className={`inline-flex items-center gap-1 text-[1.05rem] font-extrabold ${

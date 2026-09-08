@@ -1,121 +1,12 @@
 import type { Lang } from "@/lib/i18n";
-import type { AnalysisResult, ChatReply } from "@/lib/types";
+import type { ChatReply } from "@/lib/types";
 
 /**
- * DEMO_MODE responders (§34). Used when no AI key is configured or
+ * DEMO_MODE responder (§34) — CHAT ONLY. Used when no AI key is configured or
  * DEMO_MODE=true, so a live demo can never fail on missing credentials.
- * Responses are pre-written, farmer-friendly and deterministic per input.
+ * Crop-photo analysis NEVER uses demo data: without a model key it returns a
+ * clear configuration error instead (see /api/analyze-photo).
  */
-
-// ---------------------------------------------------------------------------
-// Demo photo analysis — three realistic, pre-tested scenarios mirroring the
-// PlantDoc-style field photos used in the demo script (§29, §33).
-// ---------------------------------------------------------------------------
-
-function demoPhoto(lang: Lang, scenario: 0 | 1 | 2): AnalysisResult {
-  const isHi = lang === "hi";
-  if (scenario === 0) {
-    return {
-      image_quality_ok: true,
-      quality_issue: null,
-      likely_category: "disease",
-      possible_specific_issue: isHi
-        ? "संभावित: फंगल बीमारी (अर्ली ब्लाइट जैसी)"
-        : "Possible: a fungal disease (early-blight-like)",
-      confidence: "medium",
-      explanation_simple: isHi
-        ? "पत्ती पर भूरे-काले धब्बे दिख रहे हैं, जो किसी फंगल बीमारी की तरह लग सकते हैं। यह पक्का निदान नहीं है।"
-        : "The leaf shows brown-black patches that could be a fungal disease. This is not a confirmed diagnosis.",
-      what_to_do_now: isHi
-        ? [
-            "प्रभावित पत्तियों को तोड़कर खेत से बाहर निकाल दें।",
-            "पानी सुबह दें ताकि पत्तियाँ जल्दी सूखें, नमी कम रहे।",
-            "2–3 दिन नज़र रखें — धब्बे फैलें तो विशेषज्ञ को दिखाएँ।",
-          ]
-        : [
-            "Remove affected leaves and take them out of the field.",
-            "Water early in the morning so leaves dry fast and stay less damp.",
-            "Watch for 2-3 days — if spots spread, show an expert.",
-          ],
-      what_to_avoid: isHi
-        ? [
-            "बिना विशेषज्ञ की सलाह के कोई दवा या फफूँदनाशक न डालें।",
-            "शाम को पानी देकर रात भर नमी न रखें।",
-          ]
-        : [
-            "Do not apply any chemical or fungicide without expert advice.",
-            "Do not water in the evening and leave the crop damp all night.",
-          ],
-      seek_expert_advice: true,
-      better_photo_tip: isHi
-        ? "धब्बों वाली पत्ती का बड़ा क्लोज़अप और पूरे पौधे की एक फोटो भेजें।"
-        : "Send a close-up of the spotted leaf plus one full-plant photo.",
-    };
-  }
-  if (scenario === 1) {
-    return {
-      image_quality_ok: true,
-      quality_issue: null,
-      likely_category: "looks_healthy",
-      possible_specific_issue: null,
-      confidence: "high",
-      explanation_simple: isHi
-        ? "इस फोटो में फसल स्वस्थ दिख रही है — कोई बड़ी बीमारी के लक्षण नज़र नहीं आए।"
-        : "This photo shows a healthy-looking crop — no clear signs of disease.",
-      what_to_do_now: isHi
-        ? [
-            "रोज़ की देखभाल जारी रखें — नियमित पानी और निराई।",
-            "हफ्ते में 1–2 बार पत्तियों के नीचे भी देखें।",
-          ]
-        : [
-            "Keep up routine care — regular water and weeding.",
-            "Check under the leaves once or twice a week too.",
-          ],
-      what_to_avoid: isHi
-        ? ["बिना लक्षण के कोई रसायन न डालें।"]
-        : ["Do not apply chemicals without symptoms."],
-      seek_expert_advice: false,
-      better_photo_tip: isHi
-        ? "किसी भी नई पत्ती या फल पर बदलाव दिखे तो उसकी फोटो भेजें।"
-        : "If any leaf or fruit changes, send a photo of that part.",
-    };
-  }
-  return {
-    image_quality_ok: false,
-    quality_issue: "subject_too_far",
-    likely_category: "unclear",
-    possible_specific_issue: null,
-    confidence: "low",
-    explanation_simple: isHi
-      ? "फोटो में पौधा बहुत दूर / छोटा है, इससे बीमारी का अंदाज़ा नहीं लग पा रहा।"
-      : "The plant is too far away / too small in this photo to judge its health.",
-    what_to_do_now: isHi
-      ? ["समस्या वाली पत्ती के पास जाकर एक बड़ी, साफ़ फोटो लें।"]
-      : ["Go close to the affected leaf and take one big, clear photo."],
-    what_to_avoid: [],
-    seek_expert_advice: false,
-    better_photo_tip: isHi
-      ? "पत्ती को हाथ में पकड़कर, दिन की रोशनी में, कैमरे के क़रीब से फोटो लें।"
-      : "Hold the leaf in your hand and shoot close-up in daylight.",
-  };
-}
-
-/** Deterministic scenario per image so re-checks stay stable. */
-function scenarioFromImage(base64: string): 0 | 1 | 2 {
-  const sample = base64.slice(0, Math.min(4000, base64.length));
-  let hash = 0;
-  for (let i = 0; i < sample.length; i += 7) {
-    hash = (hash + sample.charCodeAt(i)) % 997;
-  }
-  return (hash % 3) as 0 | 1 | 2;
-}
-
-export function getDemoPhotoAnalysis(
-  imageBase64: string,
-  lang: Lang
-): AnalysisResult {
-  return demoPhoto(lang, scenarioFromImage(imageBase64));
-}
 
 // ---------------------------------------------------------------------------
 // Demo chat responder — small intent matcher, always safe, in both languages.
