@@ -126,12 +126,35 @@ export async function POST(request: Request) {
       : [{ role: "user" as const, content: lastUser.content }];
 
   try {
-    const raw = await completeText({
+    let raw = await completeText({
       system,
       messages: turns.map((m) => ({ role: m.role, content: m.content })),
-      maxTokens: summarize ? 400 : 600,
+      maxTokens: summarize ? 400 : 1400,
     });
-    const cleaned = raw.trim().slice(0, MAX_MESSAGE_LEN);
+    let cleaned = raw.trim();
+
+    // Gemini can occasionally stop after a partial point. Retry only when a
+    // real question clearly received an incomplete answer, so greetings and
+    // short clarifying replies are not needlessly duplicated.
+    const numberedPoints = cleaned.match(/(?:^|\n)\s*\d+[.)]/gm)?.length ?? 0;
+    const looksIncomplete =
+      !summarize &&
+      lastUser.content.trim().length >= 8 &&
+      (cleaned.length < 120 ||
+        /point\s*5/i.test(cleaned) && !/point\s*1/i.test(cleaned) ||
+        /[,;:]$/.test(cleaned) ||
+        !/[.!?।]["')\]]?$/.test(cleaned) ||
+        (numberedPoints > 0 && numberedPoints < 3));
+    if (looksIncomplete) {
+      raw = await completeText({
+        system: `${system}\n\nYour previous draft was incomplete. Rewrite the full answer now. Start at point 1, give 3-5 complete points, and end with a complete sentence and final punctuation.`,
+        messages: turns.map((m) => ({ role: m.role, content: m.content })),
+        maxTokens: 1400,
+      });
+      cleaned = raw.trim();
+    }
+
+    cleaned = cleaned.slice(0, MAX_MESSAGE_LEN);
     if (!cleaned) {
       return NextResponse.json({ error: "server" }, { status: 502 });
     }

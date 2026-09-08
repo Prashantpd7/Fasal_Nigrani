@@ -184,28 +184,13 @@ export default function ChatPage({
     }
   };
 
-  const hasContext = Boolean(context.weather || context.photo);
-
   return (
-    <PageShell embedded={embedded} title={t("chat.title")} subtitle={t("chat.subtitle")}>
-      {hasContext ? (
-        <div className="flex flex-wrap gap-2" aria-label="context">
-          {context.weather ? (
-            <span className="chip bg-info-light text-info">
-              {t("chat.contextWeather", {
-                place: context.weather.locationName,
-              })}
-            </span>
-          ) : null}
-          {context.photo ? (
-            <span className="chip bg-primary-light text-primary" title={context.photo.summary}>
-              {t("chat.contextPhoto")}
-              {context.photo.crop ? ` · ${context.photo.crop}` : ""}
-              {context.photo.problem ? ` · ${context.photo.problem}` : ""}
-            </span>
-          ) : null}
-        </div>
-      ) : null}
+    <PageShell
+      embedded={embedded}
+      title={t("chat.title")}
+      fitViewport={!embedded}
+      chatLayout={!embedded}
+    >
 
       {attachError ? (
         <div className="rounded-2xl border-2 border-warning/40 bg-warning-light p-3 text-[0.95rem] font-semibold text-ink">
@@ -219,82 +204,60 @@ export default function ChatPage({
         </div>
       ) : null}
 
-      {/* Conversation summary (short, only the important info) */}
-      {summary ? (
-        <div className="card border-2 border-primary/30">
-          <h2 className="mb-2 flex items-center gap-2 text-[1.02rem] font-extrabold text-primary">
-            {t("chat.summaryTitle")}
-          </h2>
-          <pre className="whitespace-pre-wrap font-sans text-[0.95rem] leading-relaxed text-ink">
-            {summary}
-          </pre>
-        </div>
-      ) : null}
+      <div className="chat-scroll min-h-0 flex-1 overflow-y-auto">
+        {summary ? (
+          <div className="card border-2 border-primary/30">
+            <h2 className="mb-2 flex items-center gap-2 text-[1.02rem] font-extrabold text-primary">
+              {t("chat.summaryTitle")}
+            </h2>
+            <pre className="whitespace-pre-wrap font-sans text-[0.95rem] leading-relaxed text-ink">
+              {summary}
+            </pre>
+          </div>
+        ) : null}
 
-      {summaryBusy ? (
-        <LoadingState message={t("chat.summaryThinking")} />
-      ) : null}
+        {summaryBusy ? <LoadingState message={t("chat.summaryThinking")} /> : null}
 
-      <div className="flex flex-col gap-2.5">
-        {messages.length === 0 && !thinking && !attaching && !summary ? (
-          <div className="card border-dashed text-center">
-            <p className="text-[0.98rem] leading-relaxed text-ink-soft">
-              {t("chat.subtitle")}
-            </p>
-            <div className="mt-3 flex flex-col gap-2">
-              {dict.chat.quickQuestions.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => void send(q)}
-                  className="tile block w-full px-4 py-3 text-left text-[0.98rem] font-semibold text-ink"
-                >
-                  {q}
-                </button>
-              ))}
+        <div className="flex flex-col gap-2.5">
+          {messages.length === 0 && !thinking && !attaching && !summary ? (
+            <div className="card border-dashed text-center">
+              <div className="flex flex-col gap-2">
+                {dict.chat.quickQuestions.map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => void send(q)}
+                    className="tile block w-full px-4 py-3 text-left text-[0.98rem] font-semibold text-ink"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5 pb-2">
-            {messages.map((m, i) => (
-              <ChatBubble key={i} message={m} />
-            ))}
-            {thinking ? (
-              <div className="flex justify-start">
-                <div className="attention-pulse w-full md:w-[780px] rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft">
-                  {t("chat.thinking")}
+          ) : (
+            <div className="flex flex-col gap-2.5 pb-2">
+              {messages.map((m, i) => (
+                <ChatBubble key={i} message={m} />
+              ))}
+              {thinking ? (
+                <div className="flex justify-start">
+                  <div className="attention-pulse w-full rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft md:w-[780px]">
+                    {t("chat.thinking")}
+                  </div>
                 </div>
-              </div>
-            ) : null}
-            {attaching ? (
-              <div className="flex justify-start">
-                <div className="attention-pulse w-full md:w-[780px] rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft">
-                  {t("chat.photoAnalyzing")}
+              ) : null}
+              {attaching ? (
+                <div className="flex justify-start">
+                  <div className="attention-pulse w-full rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft md:w-[780px]">
+                    {t("chat.photoAnalyzing")}
+                  </div>
                 </div>
-              </div>
-            ) : null}
-          </div>
-        )}
-        <div ref={endRef} />
+              ) : null}
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
       </div>
-
-      {/* Summary button — short recap at the end of the conversation */}
-      {messages.length > 0 && !summary ? (
-        <button
-          type="button"
-          className="btn-secondary w-full"
-          disabled={thinking || summaryBusy}
-          onClick={() => {
-            const last = messages[messages.length - 1];
-            void send(
-              last && last.role === "user" ? last.content : t("chat.summaryRequest"),
-              true
-            );
-          }}
-        >
-          {t("chat.summaryButton")}
-        </button>
-      ) : null}
 
       <p className="mb-1 mt-1 text-center text-[0.85rem] font-medium text-ink-soft">
         {t("chat.disclaimer")}

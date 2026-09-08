@@ -160,6 +160,12 @@
     @apply mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-5 px-4 pb-12 pt-5 lg:px-6 lg:pt-6;
   }
 
+  .chat-main {
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 1rem;
+  }
+
   /* Desktop horizontal navigation link inside the header. */
   .nav-link {
     @apply inline-flex min-h-11 cursor-pointer select-none items-center gap-1.5 rounded-full px-3 text-[0.92rem] font-bold transition-colors;

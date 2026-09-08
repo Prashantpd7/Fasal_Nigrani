@@ -29,7 +29,7 @@ instead of inventing results.**
 
 ```
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash          # optional
+GEMINI_MODEL=gemini-3.6-flash          # optional
 PLANT_ID_API_KEY=                       # optional
 PLANT_ID_API_URL=https://api.plant.id/v2/health_assessment   # optional
 ANTHROPIC_API_KEY=                      # optional alternative

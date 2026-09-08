@@ -355,7 +355,7 @@
     "summaryRequest": "Please give me the short summary of this conversation."
   },
   "market": {
-    "title": "Mandi Prices (मंडी भाव)",
+    "title": "Mandi Prices",
     "subtitle": "Live rates and arrivals from official Agmarknet data — the Ministry of Agriculture & Farmers Welfare, Govt of India.",
     "stateLabel": "Choose your state / UT",
     "commodityLabel": "Choose a crop",
@@ -370,7 +370,9 @@
     "totalArrivals": "Total arrivals",
     "marketsReported": "Markets with rates",
     "noRate": "No rate reported",
-    "unitNote": "Prices in ₹/quintal · arrivals in metric tonnes.",
+    "unitNote": "Prices in ₹/{unit} · arrivals in metric tonnes.",
+    "unitKg": "kg",
+    "unitQuintal": "quintal",
     "trendLabel": "price trend over the last week",
     "daysWeek": "7 days with a rate",
     "mandiTitle": "Markets",

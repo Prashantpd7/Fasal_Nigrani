@@ -141,7 +141,8 @@ export default function PhotoCheckPage({
         else if (res.status === 413) setErrorMsg(t("photo.imageTooBig"));
         else if (data?.error === "tooManyImages") {
           setErrorMsg(t("photo.tooManyPhotos", { n: String(MAX_PHOTOS) }));
-        } else setErrorMsg(t("errors.network"));
+        } else if (data?.message) setErrorMsg(data.message);
+        else setErrorMsg(t("errors.network"));
         setView("error");
         return;
       }

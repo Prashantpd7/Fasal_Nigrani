@@ -27,6 +27,16 @@ interface StateRec {
   name: string;
 }
 
+const KG_CROPS = new Set([
+  "tomato",
+  "onion",
+  "potato",
+  "garlic",
+  "ginger",
+  "chilli",
+  "coriander",
+]);
+
 export default function MarketPage({
   embedded = false,
 }: {
@@ -83,6 +93,17 @@ export default function MarketPage({
   }, []);
 
   const refresh = () => load(stateId, crop);
+  const priceUnit = KG_CROPS.has(crop) ? "kg" : "quintal";
+  const priceUnitText = priceUnit === "kg" ? t("market.unitKg") : t("market.unitQuintal");
+  const displayPrice = (value: number | null): number | null =>
+    value === null ? null : priceUnit === "kg" ? value / 100 : value;
+  const formatDisplayedPrice = (displayed: number | null): string => {
+    return displayed === null
+      ? "—"
+      : `₹${displayed.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  };
+  const formatPrice = (value: number | null): string =>
+    formatDisplayedPrice(displayPrice(value));
 
   /** Non-null alias — TS narrows cleanly inside the JSX below. */
   const shown = result;
@@ -92,7 +113,7 @@ export default function MarketPage({
     shown && !shown.empty
       ? (() => {
           const modals = shown.mandis
-            .map((m) => m.latest.modal)
+            .map((m) => displayPrice(m.latest.modal))
             .filter((v): v is number => v !== null);
           const totalArr = shown.mandis.reduce(
             (s, m) => s + (m.latest.arrivalsMt ?? 0),
@@ -133,8 +154,8 @@ export default function MarketPage({
   };
 
   const row = (m: MarketPayload["mandis"][number], i: number) => {
-    const latest = m.latest.modal;
-    const prev = m.previous?.modal ?? null;
+    const latest = displayPrice(m.latest.modal);
+    const prev = displayPrice(m.previous?.modal ?? null);
     const d = dirInfo(latest, prev);
     return (
       <article key={`${m.name}-${i}`} className="card-sm flex flex-col gap-3">
@@ -149,7 +170,7 @@ export default function MarketPage({
           <div className="stat-pill">
             <dt className="sr-only">{t("market.modalPrice")}</dt>
             <dd className="text-[1.05rem] font-extrabold">
-              {latest !== null ? `₹${latest.toLocaleString("en-IN")}` : t("market.noRate")}
+              {latest !== null ? `${formatPrice(m.latest.modal)} / ${priceUnitText}` : t("market.noRate")}
             </dd>
             <p className="mt-0.5 text-[0.76rem] font-semibold text-ink-soft">{t("market.modalPrice")}</p>
           </div>
@@ -157,7 +178,7 @@ export default function MarketPage({
             <dt className="sr-only">{t("market.range")}</dt>
             <dd className="text-[0.98rem] font-extrabold">
               {m.latest.min !== null && m.latest.max !== null
-                ? `₹${m.latest.min.toLocaleString("en-IN")}–${m.latest.max.toLocaleString("en-IN")}`
+                ? `${formatPrice(m.latest.min)}–${formatPrice(m.latest.max)} / ${priceUnitText}`
                 : "—"}
             </dd>
             <p className="mt-0.5 text-[0.76rem] font-semibold text-ink-soft">{t("market.range")}</p>
@@ -186,7 +207,7 @@ export default function MarketPage({
         </div>
         <p className="flex items-center gap-1.5 text-[0.82rem] font-semibold text-ink-soft">
           <InfoIcon size={14} className="shrink-0" />
-          {t("market.unitNote")}
+          {t("market.unitNote", { unit: priceUnitText })}
         </p>
       </article>
     );
@@ -198,8 +219,8 @@ export default function MarketPage({
         <thead>
           <tr className="border-b border-earth/15 bg-bg text-[0.85rem] font-semibold text-ink-soft">
             <th className="px-4 py-2.5">{t("market.tableMarket")}</th>
-            <th className="px-4 py-2.5 text-right">{t("market.modalPrice")} (₹/qtl)</th>
-            <th className="px-4 py-2.5 text-right">{t("market.range")} (₹)</th>
+            <th className="px-4 py-2.5 text-right">{t("market.modalPrice")} (₹/{priceUnitText})</th>
+            <th className="px-4 py-2.5 text-right">{t("market.range")} (₹/{priceUnitText})</th>
             <th className="px-4 py-2.5 text-right">{t("market.arrivals")} (MT)</th>
             <th className="px-4 py-2.5">{t("market.trendLabel")}</th>
             <th className="px-4 py-2.5 text-center">{t("market.daysWeek")}</th>
@@ -207,8 +228,8 @@ export default function MarketPage({
         </thead>
         <tbody>
           {mandis.map((m, i) => {
-            const latest = m.latest.modal;
-            const prev = m.previous?.modal ?? null;
+            const latest = displayPrice(m.latest.modal);
+            const prev = displayPrice(m.previous?.modal ?? null);
             const d = dirInfo(latest, prev);
             return (
               <tr key={`${m.name}-${i}`} className="border-b border-earth/10 hover:bg-primary-light/30">
@@ -219,11 +240,11 @@ export default function MarketPage({
                   ) : null}
                 </td>
                 <td className="px-4 py-2.5 text-right font-extrabold text-ink">
-                  {latest !== null ? latest.toLocaleString("en-IN") : "—"}
+                  {latest !== null ? formatPrice(m.latest.modal) : "—"}
                 </td>
                 <td className="px-4 py-2.5 text-right text-ink">
                   {m.latest.min !== null && m.latest.max !== null
-                    ? `${m.latest.min.toLocaleString("en-IN")}–${m.latest.max.toLocaleString("en-IN")}`
+                    ? `${formatPrice(m.latest.min)}–${formatPrice(m.latest.max)}`
                     : "—"}
                 </td>
                 <td className="px-4 py-2.5 text-right text-ink">
@@ -262,7 +283,7 @@ export default function MarketPage({
   );
 
   return (
-    <PageShell embedded={embedded} title={t("market.title")} subtitle={t("market.subtitle")}>
+    <PageShell embedded={embedded} title={t("market.title")}>
       <section className="card-sm" aria-label={t("market.commodityLabel")}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
           {states.length > 0 ? (
@@ -326,14 +347,16 @@ export default function MarketPage({
               <div className="stat-pill">
                 <dt className="sr-only">{t("market.modalPrice")}</dt>
                 <dd className="text-[1.25rem] font-extrabold text-primary">
-                  ₹{summary.modalAvg !== null ? summary.modalAvg.toLocaleString("en-IN") : "—"}
+                  {summary.modalAvg !== null ? formatDisplayedPrice(summary.modalAvg) : "—"} / {priceUnitText}
                 </dd>
                 <p className="mt-0.5 text-[0.8rem] font-semibold text-ink-soft">{t("market.modalPrice")} · {t("market.avgLabel")}</p>
               </div>
               <div className="stat-pill">
                 <dt className="sr-only">{t("market.range")}</dt>
                 <dd className="text-[1.1rem] font-extrabold text-ink">
-                  ₹{summary.min !== null && summary.max !== null ? `${summary.min.toLocaleString("en-IN")}–${summary.max.toLocaleString("en-IN")}` : "—"}
+                  {summary.min !== null && summary.max !== null
+                    ? `${formatDisplayedPrice(summary.min)}–${formatDisplayedPrice(summary.max)} / ${priceUnitText}`
+                    : "—"}
                 </dd>
                 <p className="mt-0.5 text-[0.8rem] font-semibold text-ink-soft">{t("market.range")}</p>
               </div>

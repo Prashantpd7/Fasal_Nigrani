@@ -107,7 +107,7 @@ export default function ChatInput({
   };
 
   return (
-    <div className="sticky bottom-[88px] border-t border-earth/10 bg-bg/95 px-4 py-3 backdrop-blur">
+    <div className="shrink-0 border-t border-earth/10 bg-bg/95 px-4 py-3 pb-1 backdrop-blur">
       {voiceError ? (
         <p className="mb-1.5 text-[0.85rem] font-semibold text-warning">
           {t("chat.voiceUnsupported")}

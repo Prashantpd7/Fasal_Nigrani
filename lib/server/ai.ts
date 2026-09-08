@@ -88,9 +88,8 @@ export async function completeVision(opts: {
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 function geminiModel(): string {
-  // gemini-2.5-flash is deprecated (no longer available to new users);
-  // gemini-3.6-flash is the current supported model. GEMINI_MODEL can
-  // override the default.
+  // Gemini model availability varies by account; this is the model confirmed
+  // by the configured project. GEMINI_MODEL can override the default.
   return process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
 }
 
@@ -107,10 +106,11 @@ async function geminiRequest(opts: {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.system }] },
         contents: [
           {
             role: "user",
-            parts: [{ text: opts.system }, ...opts.parts],
+            parts: opts.parts,
           },
         ],
         generationConfig: {
@@ -141,15 +141,10 @@ async function googleGenerate(opts: {
   messages: ChatTurn[];
   maxTokens?: number;
 }): Promise<string> {
-  const parts = opts.messages.map((m) => ({
-    role: m.role,
+  const contents = opts.messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
   }));
-  // Gemini needs alternating roles; flatten system into the first user turn.
-  const contents = [
-    { role: "user", parts: [{ text: opts.system }] },
-    ...parts,
-  ];
   const res = await fetch(
     `${GEMINI_BASE}/models/${geminiModel()}:generateContent?key=${encodeURIComponent(
       process.env.GEMINI_API_KEY!
@@ -158,6 +153,7 @@ async function googleGenerate(opts: {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.system }] },
         contents,
         generationConfig: {
           maxOutputTokens: opts.maxTokens ?? 600,

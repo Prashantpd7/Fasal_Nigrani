@@ -10,6 +10,7 @@ interface PageShellProps {
   title?: string;
   subtitle?: string;
   fitViewport?: boolean;
+  chatLayout?: boolean;
   /** When true, renders ONLY the children (used by the single-page
    *  dashboard to embed a feature in place). */
   embedded?: boolean;
@@ -26,6 +27,7 @@ export default function PageShell({
   title,
   subtitle,
   fitViewport = false,
+  chatLayout = false,
   embedded = false,
   children,
 }: PageShellProps) {
@@ -36,7 +38,7 @@ export default function PageShell({
   return (
     <div className={`flex min-h-dvh flex-col bg-bg ${fitViewport ? "h-dvh overflow-hidden" : ""}`}>
       <Header />
-      <main className="app-main">
+      <main className={`app-main ${chatLayout ? "chat-main" : ""}`}>
         {title ? (
           <header className="flex flex-col gap-3">
             <Link
@@ -52,7 +54,9 @@ export default function PageShell({
             ) : null}
           </header>
         ) : null}
-        <div className="flex flex-col gap-4">{children}</div>
+        <div className={`flex flex-col gap-4 ${chatLayout ? "min-h-0 flex-1" : ""}`}>
+          {children}
+        </div>
       </main>
     </div>
   );

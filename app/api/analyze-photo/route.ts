@@ -25,11 +25,27 @@ interface PhotoRequestBody {
 }
 
 function toImagePart(raw: unknown, fallbackMime: string): ImagePart | null {
-  if (typeof raw !== "string") return null;
-  let b64 = raw;
+  let value: string;
   let mime = fallbackMime;
-  if (raw.includes(",")) {
-    const [head, data] = raw.split(",", 2);
+  if (typeof raw === "string") {
+    value = raw;
+  } else if (raw && typeof raw === "object") {
+    const image = raw as { image?: unknown; mime?: unknown };
+    if (typeof image.image !== "string") return null;
+    value = image.image;
+    if (
+      typeof image.mime === "string" &&
+      /^image\/(jpeg|png|webp|heic|heif)$/.test(image.mime)
+    ) {
+      mime = image.mime;
+    }
+  } else {
+    return null;
+  }
+
+  let b64 = value;
+  if (value.includes(",")) {
+    const [head, data] = value.split(",", 2);
     const m = /^data:([^;]+);base64$/.exec(head);
     if (m && /^image\/(jpeg|png|webp|heic|heif)$/.test(m[1])) mime = m[1];
     b64 = data;
@@ -144,7 +160,13 @@ export async function POST(request: Request) {
     } catch (e) {
       if (attempt === 1) {
         return NextResponse.json(
-          { error: "server", detail: e instanceof AIError ? e.message : undefined },
+          {
+            error: "server",
+            message:
+              e instanceof AIError
+                ? e.message
+                : "The vision provider could not analyze the uploaded image.",
+          },
           { status: 502 }
         );
       }
