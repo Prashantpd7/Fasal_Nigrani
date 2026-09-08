@@ -1,26 +1,110 @@
+/* Google Fonts: Inter (Latin) + Noto Sans Devanagari. All @import rules must
+   precede other statements. If the network is unavailable this import fails
+   silently and the system fallback stack below keeps everything readable. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap");
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   Fasal Nigrani — design tokens (Master brief §11)
+   Defined once as Tailwind v4 theme tokens; each also becomes a
+   CSS custom property (var(--color-*)) usable anywhere in CSS.
+   Green = healthy/good/primary · Amber = caution/uncertain ·
+   Red = urgent/seek-expert ONLY · Blue = weather-specific info only.
+   ============================================================ */
+@theme {
+  --color-bg: #fbf7ef;
+  --color-surface: #ffffff;
+  --color-primary: #2f6b3a;
+  --color-primary-light: #e7f0e4;
+  --color-earth: #8b5e34;
+  --color-earth-light: #f2e8da;
+  --color-ink: #1f2a1f;
+  --color-ink-soft: #5b6b5b;
+  --color-warning: #c97c1e;
+  --color-warning-light: #fae9cf;
+  --color-danger: #b3261e;
+  --color-danger-light: #f9e0de;
+  --color-success: #2f6b3a;
+  --color-success-light: #e7f0e4;
+  --color-info: #2d6a8f;
+  --color-info-light: #dfeaf1;
+
+  /* Inter covers Latin, Noto Sans Devanagari covers Devanagari glyphs; the
+     system fallback keeps text readable if the font import fails (§12, §28). */
+  --font-sans: "Inter", "Noto Sans Devanagari", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+    /* Larger base text for low-literacy / older readers (§12). */
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background: var(--color-primary-light);
+  }
+
+  /* Consistent, visible focus for keyboard users (§15). */
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-primary) 55%, white);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Card: "trusted village helper's notebook" feel (§10) */
+  .card {
+    @apply rounded-3xl border border-earth/15 bg-surface p-5 shadow-[0_1px_3px_rgba(31,42,31,0.08)] sm:p-6;
+  }
+
+  /* Button base styles are repeated per variant (Tailwind v4 cannot @apply a
+     custom class); each variant keeps ≥44px touch height, 56px on primary. */
+  .btn-primary {
+    @apply inline-flex min-h-14 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-[1.02rem] font-semibold text-white shadow-sm transition-transform duration-100 active:scale-[0.98] hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex min-h-14 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl border border-earth/30 bg-surface px-5 text-[1.02rem] font-semibold text-ink transition-transform duration-100 active:scale-[0.98] hover:bg-earth-light/60 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex min-h-11 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-primary-light px-4 text-[1rem] font-semibold text-primary transition-transform duration-100 active:scale-[0.98] hover:bg-primary/15 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-danger-soft {
+    @apply inline-flex min-h-14 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-danger-light px-5 text-[1.02rem] font-semibold text-danger transition-transform duration-100 active:scale-[0.98] hover:bg-danger/15 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-[0.95rem] font-semibold text-ink-soft;
+  }
+}
+
+/* Subtle attention pulse used while an async action is running */
+@keyframes attention-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.attention-pulse {
+  animation: attention-pulse 1.6s ease-in-out infinite;
 }

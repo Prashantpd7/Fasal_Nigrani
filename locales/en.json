@@ -1,0 +1,177 @@
+{
+  "brand": {
+    "name": "Fasal Nigrani",
+    "hiName": "फसल निगरानी",
+    "sub": "Your crop's daily guardian — understand the weather and get plain-language crop advice, anytime, in your pocket."
+  },
+  "home": {
+    "heroTitle": "What does your farm need today?",
+    "heroSub": "Weather understanding, crop photo check and quick answers — in simple language, in Hindi or English. This is not a doctor's prescription; it is a helpful first opinion.",
+    "weatherCard": {
+      "title": "Weather & Crop Advice",
+      "desc": "See what today's and the coming days' weather means for your field — spray, irrigate or wait?"
+    },
+    "photoCard": {
+      "title": "Check a Crop Photo",
+      "desc": "Send a photo of a leaf or plant — get a fast first opinion on disease, pest damage, water stress or a deficiency."
+    },
+    "chatCard": {
+      "title": "Ask a Question",
+      "desc": "Type or speak any farm question in simple words — get a short, clear answer with what to do next."
+    },
+    "soonTitle": "Coming soon",
+    "soonItems": ["Mandi (market) prices", "Soil testing", "Government schemes"],
+    "noteTitle": "Please remember",
+    "note": "This tool gives guidance, not a guaranteed cure. If a disease or damage looks serious or is spreading, please contact your local Krishi Vigyan Kendra or an agriculture expert."
+  },
+  "nav": {
+    "home": "Home",
+    "weather": "Weather",
+    "photo": "Crop Photo",
+    "chat": "Ask"
+  },
+  "lang": {
+    "label": "Language",
+    "hindi": "हिंदी",
+    "english": "English"
+  },
+  "weather": {
+    "title": "Weather & Crop Advice",
+    "subtitle": "Tell us your area and we will tell you what the weather means for your field today.",
+    "locationTitle": "Where is your farm?",
+    "useMyLocation": "Use my location",
+    "choosingLocation": "Finding your location…",
+    "geoDenied": "Location not available. Choose your district from the list below — your farm advice will still work.",
+    "listTitle": "Or choose your district",
+    "confirmTitle": "Is this right?",
+    "confirmSubtitle": "We will give weather advice for this place.",
+    "confirmYes": "Yes, that's right",
+    "changeLocation": "Change",
+    "checking": "Checking the weather for your field…",
+    "refresh": "Refresh",
+    "updatedAt": "Updated",
+    "warningsTitle": "Please be careful",
+    "actionsTitle": "What to do today",
+    "forecastTitle": "Coming days",
+    "noWarnings": "No major warnings right now.",
+    "normalSummary": "Weather looks fine — no big warning for today. You can do your routine farm work.",
+    "summaryToday": "Today {tMin}–{tMax}°C. {sky}. Wind up to {wind} km/h.",
+    "nowLine": "Right now: {temp}°C, humidity {humidity}%, wind {wind} km/h.",
+    "rainProb": "Rain chance {p}%",
+    "rainMm": "{rain} mm rain expected",
+    "windKmh": "Wind {w} km/h",
+    "humidityPct": "Humidity {h}%",
+    "code": {
+      "clear": "Clear sky",
+      "partly": "Light clouds",
+      "cloudy": "Cloudy",
+      "rain": "Rain",
+      "storm": "Storm with rain",
+      "snow": "Snow",
+      "fog": "Fog / haze"
+    },
+    "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "dayToday": "Today",
+    "rule": {
+      "warn": {
+        "rainHigh": "There is a {p}% chance of rain in the next 24 hours — this can spoil fresh irrigation or a spray.",
+        "waterlog": "Heavy rain ({rain} mm) may fall — waterlogging or crop lodging (falling over) is possible in standing crops.",
+        "heat": "Heat may reach {temp}°C — avoid fieldwork in the afternoon and water early morning or evening only.",
+        "wind": "Wind may blow at {wind} km/h — do not spray (the chemical will drift away), and tall or flowering crops could get physical damage.",
+        "fungal": "High humidity ({humidity}%) with 20–30°C temperature — fungal disease risk can rise in the next two days. Keep an eye on leaves, this is not a diagnosis.",
+        "dry": "No rain expected for about {days} days and heat up to {temp}°C — crops can face water stress. Use water carefully.",
+        "swing": "Weather is changing (about {delta}°C difference from yesterday) — keep a close watch on the crop."
+      },
+      "act": {
+        "rainNoSpray": "Do not irrigate or spray today — rain may come and wash it away.",
+        "drainCheck": "Keep drainage channels clear so water does not stand in the field.",
+        "heatTiming": "Give water early morning or evening, not in the afternoon heat.",
+        "windNoSpray": "Do not spray in strong wind — the chemical can drift and be wasted.",
+        "fungalWatch": "Check under the leaves daily; if white or brown spots spread, ask an expert.",
+        "waterSave": "Save water — no rain is expected in the coming days.",
+        "swingWatch": "Walk the field daily while the weather keeps changing.",
+        "normalDay": "No special action needed — continue routine care of the crop."
+      }
+    }
+  },
+  "photo": {
+    "title": "Check a Crop Photo",
+    "subtitle": "Take a clear photo of the affected leaf or plant in daylight. We give a first opinion — not a final diagnosis.",
+    "takeCamera": "Take a photo with camera",
+    "chooseGallery": "Choose from gallery",
+    "cameraAlt": "Camera",
+    "captured": "Photo selected — analyzing…",
+    "analyzing": "Looking at your photo…",
+    "analyzingDetail": "This can take 20–30 seconds. Please wait.",
+    "chooseFirst": "First choose or take a photo.",
+    "imageTooBig": "The photo could not be prepared for sending. Please choose another one.",
+    "sendError": "Could not send the photo. The internet may be slow — please try again.",
+    "retake": "Take another photo",
+    "quality": {
+      "tooDark": "The photo is too dark. Please retake it in good light.",
+      "tooBlurry": "The photo is blurry. Hold the camera steady and retake it.",
+      "tooSmall": "The plant is too far / too small in the photo. Go closer and retake.",
+      "generic": "The photo is not clear enough. Please retake it in good light."
+    },
+    "finding": "What could be wrong?",
+    "possibleIssue": "Possible: {issue}",
+    "explanationLabel": "In simple words",
+    "doNowTitle": "What to do now",
+    "avoidTitle": "What NOT to do",
+    "seekExpert": "This may be serious or unclear. Please contact your Krishi Vigyan Kendra or an agriculture expert before spending on any treatment.",
+    "askMore": "Ask something else",
+    "photoAlt": "Your crop photo",
+    "betterPhotoTip": "For a better check: {tip}",
+    "categories": {
+      "disease": "Plant disease",
+      "pest_damage": "Pest / insect damage",
+      "water_stress": "Water stress",
+      "nutrient_deficiency": "Nutrient deficiency",
+      "physical_damage": "Physical damage",
+      "unclear": "Not clear from this photo",
+      "looks_healthy": "Crop looks healthy"
+    },
+    "confidence": {
+      "label": "Confidence",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "emptyTitle": "No photo yet",
+    "emptyDesc": "Take or upload a photo of your crop here. We will tell you right away what problem it could be."
+  },
+  "chat": {
+    "title": "Ask a Question",
+    "subtitle": "Ask in your own words — about weather, a crop problem, or a photo you just checked. We answer simply and honestly.",
+    "placeholder": "Type your question here…",
+    "send": "Send",
+    "micAlt": "Speak your question",
+    "listening": "Listening… speak now.",
+    "voiceUnsupported": "Voice typing is not supported in this browser — please type your question.",
+    "thinking": "Writing your answer…",
+    "error": "Could not get an answer just now. Please try again.",
+    "disclaimer": "Guidance only — never use a chemical dose mentioned here without an expert's advice.",
+    "quickQuestions": ["Should I spray today or not?", "When should I water my crop?", "Leaves are turning yellow — what should I do?"],
+    "contextWeather": "Weather context: {place}",
+    "contextPhoto": "Sharing the crop photo you just checked"
+  },
+  "common": {
+    "back": "Back",
+    "retry": "Try again",
+    "demoData": "Example data (demo mode)",
+    "liveData": "Live data",
+    "staleNote": "This is older data — the network did not respond. Refresh when connected.",
+    "expertLine": "For serious problems always consult a Krishi Vigyan Kendra or agriculture expert near you.",
+    "searchPlaceholder": "Search…",
+    "empty": "Nothing here yet."
+  },
+  "errors": {
+    "network": "The internet is slow or not working. Please try again.",
+    "server": "Something went wrong on our side. Please try again in a moment.",
+    "rateLimited": "Too many requests right now. Please wait a little and try again."
+  },
+  "analysis": {
+    "demoTitle": "Example photo check (demo mode)",
+    "demoDesc": "Add an AI key (see README) to get real photo analysis."
+  }
+}
