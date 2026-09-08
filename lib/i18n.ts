@@ -3,7 +3,7 @@ import hi from "@/locales/hi.json";
 
 export type Lang = "hi" | "en";
 export const LANGS: Lang[] = ["hi", "en"];
-export const DEFAULT_LANG: Lang = "hi";
+export const DEFAULT_LANG: Lang = "en";
 
 // Both files share the exact same nested shape; en is the reference type.
 const dictionaries: Record<Lang, typeof en> = { en, hi };
