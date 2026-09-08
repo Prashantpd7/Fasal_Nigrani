@@ -30,7 +30,11 @@ const CAT_META: Record<
   skill: { labelEn: "More schemes", labelHi: "अन्य योजनाएँ", emoji: "📋" },
 };
 
-export default function SchemesPage() {
+export default function SchemesPage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+} = {}) {
   const { t, lang } = useI18n();
   const [data, setData] = useState<SchemesPayload | null>(null);
   const [busy, setBusy] = useState(true);
@@ -70,7 +74,7 @@ export default function SchemesPage() {
   const schemeName = (s: GovtScheme) => (lang === "hi" ? s.nameHi : s.nameEn);
 
   return (
-    <PageShell title={t("schemes.title")} subtitle={t("schemes.subtitle")} backHref="/">
+    <PageShell embedded={embedded} title={t("schemes.title")} subtitle={t("schemes.subtitle")}>
       {busy ? <LoadingState message={t("schemes.loading")} /> : null}
       {error ? (
         <ErrorState message={error} onRetry={() => window.location.reload()} />

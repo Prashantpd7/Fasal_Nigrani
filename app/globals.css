@@ -157,7 +157,7 @@
   /* Primary content container — desktop uses the full viewport (capped at
      1280px) instead of the old 600px mobile column. */
   .app-main {
-    @apply mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-4 px-4 pb-24 pt-4 lg:px-6 lg:pt-6;
+    @apply mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-5 px-4 pb-12 pt-5 lg:px-6 lg:pt-6;
   }
 
   /* Desktop horizontal navigation link inside the header. */
@@ -182,6 +182,82 @@
   /* Compact data row used inside tables / summary strips. */
   .table-wrap {
     @apply overflow-x-auto rounded-2xl border border-earth/15 bg-surface;
+  }
+
+  .field-decoration {
+    @apply pointer-events-none relative h-36 w-full overflow-hidden;
+    color: var(--color-primary);
+  }
+
+  .field-decoration svg {
+    @apply block h-full w-full;
+  }
+
+  .field-stalk {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 4;
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    animation: field-sway 4.8s ease-in-out infinite;
+  }
+
+  .field-leaf {
+    fill: currentColor;
+    opacity: 0.92;
+    stroke: none;
+  }
+
+  .field-bed {
+    fill: currentColor;
+    opacity: 0.9;
+  }
+
+  .field-stalk ellipse {
+    fill: currentColor;
+    stroke: none;
+  }
+
+  .field-stalk-b {
+    animation-delay: -1.2s;
+  }
+
+  .field-stalk-c {
+    animation-delay: -2.4s;
+  }
+
+  .field-stalk-d {
+    animation-delay: -3.6s;
+  }
+
+  .field-stalk-e {
+    animation-delay: -4.4s;
+  }
+
+  .field-stalk-f { animation-delay: -0.4s; }
+  .field-stalk-g { animation-delay: -1.6s; }
+  .field-stalk-h { animation-delay: -2.8s; }
+  .field-stalk-i { animation-delay: -3.8s; }
+  .field-stalk-j { animation-delay: -0.9s; }
+  .field-stalk-k { animation-delay: -2.1s; }
+  .field-stalk-l { animation-delay: -3.2s; }
+  .field-stalk-m { animation-delay: -4.1s; }
+  .field-stalk-n { animation-delay: -1.1s; }
+
+  .field-ground {
+    fill: currentColor;
+    opacity: 0.82;
+  }
+}
+
+@keyframes field-sway {
+  0%, 100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
   }
 }
 

@@ -1,18 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import LanguageSwitcher from "./LanguageSwitcher";
-import {
-  CameraIcon,
-  ChatBubbleIcon,
-  CloudRainIcon,
-  GovernmentIcon,
-  HomeIcon,
-  RupeeIcon,
-  SoilIcon,
-  SproutIcon,
-} from "./icons";
+import { SproutIcon } from "./icons";
 import { useI18n } from "@/lib/I18nProvider";
 
 /** Brand wordmark — always "Fasal Nigrani" with the Devanagari name alongside. */
@@ -43,99 +33,12 @@ export function BrandMark({ href = "/" }: { href?: string } = {}) {
   );
 }
 
-interface NavItem {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  match: (path: string) => boolean;
-}
-
-/**
- * Header v3 — a real application bar:
- *  - sticky full-width top bar
- *  - brand (left)
- *  - desktop navigation (Home, Weather, Photo, Ask, Mandi, Soil, Schemes)
- *    — icons on tablet, icon+label on desktop, hidden on mobile (bottom nav)
- *  - language switcher (right)
- */
 export default function Header() {
-  const { t } = useI18n();
-  const path = usePathname();
-
-  const nav: NavItem[] = [
-    {
-      href: "/",
-      icon: <HomeIcon size={20} />,
-      label: t("nav.home"),
-      match: (p) => p === "/",
-    },
-    {
-      href: "/weather",
-      icon: <CloudRainIcon size={20} />,
-      label: t("nav.weather"),
-      match: (p) => p.startsWith("/weather"),
-    },
-    {
-      href: "/photo-check",
-      icon: <CameraIcon size={20} />,
-      label: t("nav.photo"),
-      match: (p) => p.startsWith("/photo-check"),
-    },
-    {
-      href: "/chat",
-      icon: <ChatBubbleIcon size={20} />,
-      label: t("nav.chat"),
-      match: (p) => p.startsWith("/chat"),
-    },
-    {
-      href: "/market",
-      icon: <RupeeIcon size={20} />,
-      label: t("nav.market"),
-      match: (p) => p.startsWith("/market"),
-    },
-    {
-      href: "/soil",
-      icon: <SoilIcon size={20} />,
-      label: t("nav.soil"),
-      match: (p) => p.startsWith("/soil"),
-    },
-    {
-      href: "/schemes",
-      icon: <GovernmentIcon size={20} />,
-      label: t("nav.schemes"),
-      match: (p) => p.startsWith("/schemes"),
-    },
-  ];
 
   return (
     <header className="app-header">
-      <div className="app-header-inner">
+      <div className="app-header-inner flex-wrap py-2">
         <BrandMark />
-
-        <nav
-          aria-label={t("nav.mainNav")}
-          className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex"
-        >
-          {nav.map((item) => {
-            const active = item.match(path);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={`nav-link whitespace-nowrap ${
-                  active
-                    ? "bg-primary text-white shadow-sm"
-                    : "text-ink-soft hover:bg-primary-light/50 hover:text-ink"
-                }`}
-              >
-                <span className="shrink-0">{item.icon}</span>
-                <span className="hidden xl:inline">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
         <LanguageSwitcher />
       </div>
     </header>

@@ -7,12 +7,7 @@ import { useI18n } from "@/lib/I18nProvider";
 export function SourceChip({ source }: { source: "live" | "demo" }) {
   const { t } = useI18n();
   if (source === "demo") {
-    return (
-      <span className="chip bg-warning-light text-warning">
-        <InfoIcon size={15} />
-        {t("common.demoData")}
-      </span>
-    );
+    return null;
   }
   return (
     <span className="chip bg-primary-light text-primary">

@@ -35,11 +35,20 @@ interface FarmMapProps {
 function FollowCenter({ center }: { center: { lat: number; lon: number } }) {
   const map = useMap();
   useEffect(() => {
-    map.setView([center.lat, center.lon], Math.max(map.getZoom(), 15), {
-      animate: true,
+    let cancelled = false;
+    map.whenReady(() => {
+      const frame = window.requestAnimationFrame(() => {
+        if (cancelled || !map.getContainer().isConnected) return;
+        map.setView([center.lat, center.lon], Math.max(map.getZoom(), 15), {
+          animate: true,
+        });
+      });
+      return () => window.cancelAnimationFrame(frame);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [center.lat, center.lon]);
+    return () => {
+      cancelled = true;
+    };
+  }, [center.lat, center.lon, map]);
   return null;
 }
 
@@ -47,9 +56,18 @@ function FollowCenter({ center }: { center: { lat: number; lon: number } }) {
 function InitialFly({ center }: { center: { lat: number; lon: number } }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([center.lat, center.lon], 15, { duration: 0.8 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let cancelled = false;
+    map.whenReady(() => {
+      const frame = window.requestAnimationFrame(() => {
+        if (cancelled || !map.getContainer().isConnected) return;
+        map.flyTo([center.lat, center.lon], 15, { duration: 0.8 });
+      });
+      return () => window.cancelAnimationFrame(frame);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [center.lat, center.lon, map]);
   return null;
 }
 
@@ -63,8 +81,6 @@ export default function FarmMap({
 }: FarmMapProps) {
   const { t, lang } = useI18n();
   const [drawing, setDrawing] = useState(false);
-  const [showNdsvi, setShowNdvi] = useState(false);
-  const [showStreets, setShowStreets] = useState(false);
   const [tip, setTip] = useState<string | null>(null);
   const drawingRef = useRef(false);
 
@@ -78,18 +94,12 @@ export default function FarmMap({
         : `${m2ToHectares(areaM2).toFixed(2)} hectares (${m2ToAcres(areaM2).toFixed(2)} acres)`
       : null;
 
-  // NDVI tile layer URL (latest observation date).
-  const ndviUrl = useMemo(() => {
-    if (!status?.ndvi) return null;
-    return status.ndvi.tileUrl
-      .replace("{date}", status.ndvi.date)
-      .replace("{z}", "{z}")
-      .replace("{y}", "{y}")
-      .replace("{x}", "{x}");
-  }, [status]);
-
-  const basemapUrl = status?.basemap.tileUrl ?? "";
-  const basemapAttribution = status?.basemap.attribution ?? "";
+  const basemapUrl =
+    status?.basemap.tileUrl ??
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+  const basemapAttribution =
+    status?.basemap.attribution ??
+    "Esri, Maxar, Earthstar Geographics, and the GIS User Community";
 
   const handleMapClick = useCallback(
     (latlng: { lat: number; lng: number }) => {
@@ -138,16 +148,6 @@ export default function FarmMap({
           {basemapUrl ? (
             <TileLayer url={basemapUrl} attribution={basemapAttribution} maxZoom={19} />
           ) : null}
-          {showStreets ? (
-            <TileLayer
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              maxZoom={19}
-            />
-          ) : null}
-          {showNdsvi && ndviUrl && status?.ndvi ? (
-            <TileLayer url={ndviUrl} opacity={0.78} maxZoom={status.ndvi.maxZoom} />
-          ) : null}
           <CircleMarker
             center={[center.lat, center.lon]}
             radius={9}
@@ -177,15 +177,6 @@ export default function FarmMap({
           </div>
         ) : null}
 
-        {showNdsvi && status?.ndvi ? (
-          <div className="pointer-events-none absolute bottom-2 left-2 z-[500] rounded-xl bg-surface/95 px-3 py-2 text-[0.8rem] leading-tight shadow">
-            <p className="font-extrabold text-ink">{t("farm.ndviLegend")}</p>
-            <div className="mt-1 h-2.5 w-40 rounded-full bg-gradient-to-r from-[#f5e6d8] via-[#d9c05f] to-[#1a7a3a]" />
-            <p className="mt-0.5 text-ink-soft">
-              {lang === "hi" ? "कम हरियाली → ज़्यादा हरियाली" : "Less green → More green"}
-            </p>
-          </div>
-        ) : null}
       </div>
 
       {/* Control bar — big, tappable (only when editable) */}
@@ -226,40 +217,12 @@ export default function FarmMap({
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2">
-          <LayerToggle
-            active={showNdsvi}
-            disabled={!status?.ndvi}
-            onClick={() => setShowNdvi((v) => !v)}
-            label={t("farm.layerNdvi")}
-          />
-          <LayerToggle
-            active={showStreets}
-            onClick={() => setShowStreets((v) => !v)}
-            label={t("farm.layerStreets")}
-          />
           <span className="ml-auto inline-flex items-center gap-1 text-[0.85rem] font-semibold text-ink-soft">
             <MapPinIcon size={15} />
             {center.lat.toFixed(4)}, {center.lon.toFixed(4)}
           </span>
         </div>
 
-        {/* Honest satellite provenance */}
-        {status?.ndvi ? (
-          <p className="px-1 text-[0.85rem] font-medium leading-relaxed text-ink-soft">
-            {t("farm.satelliteLabel", {
-              date: status.ndvi.date,
-            })}
-            {status.ndvi.daysAgo > 1
-              ? ` ${t("farm.satelliteDaysAgo", { days: String(status.ndvi.daysAgo) })}`
-              : ` ${t("farm.satelliteDaysAgoOne")}`}
-            {" — "}
-            {t("farm.sourceGibs")}
-          </p>
-        ) : (
-          <p className="px-1 text-[0.85rem] font-medium leading-relaxed text-warning">
-            {t("farm.satelliteUnavailable")}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -292,32 +255,5 @@ function VertexMarkers({ ring }: { ring: [number, number][] }) {
         />
       ))}
     </>
-  );
-}
-
-function LayerToggle({
-  active,
-  disabled = false,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`min-h-10 cursor-pointer rounded-full px-3.5 text-[0.9rem] font-bold transition-colors ${
-        active
-          ? "bg-primary text-white"
-          : "border border-earth/25 bg-bg text-ink hover:bg-primary-light/50"
-      } disabled:cursor-not-allowed disabled:opacity-40`}
-    >
-      {label}
-    </button>
   );
 }

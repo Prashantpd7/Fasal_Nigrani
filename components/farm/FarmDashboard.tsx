@@ -128,8 +128,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
     statusBusy,
     statusFailed,
     agro,
-    agroBusy,
-    agroFailed,
   } = props;
   const [showDetails, setShowDetails] = useState(false);
 
@@ -147,7 +145,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
     })) ?? [];
   const warnings = [...weather.warnings, ...agriWarnings];
   const importantWarnings = warnings.filter((w) => w.severity !== "info");
-  const infoNotes = warnings.filter((w) => w.severity === "info");
 
   // Merged actions: crop-specific first, then weather actions (max 3).
   const agriActions =
@@ -256,9 +253,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
             <Metric label={t("farm.metricHumidity")} value={`${weather.current.humidity}%`} icon={<span aria-hidden>💧</span>} />
             <Metric label={t("farm.metricCloud")} value={weather.current.cloudCover !== null ? `${weather.current.cloudCover}%` : "—"} icon={<span aria-hidden>☁️</span>} />
           </dl>
-          <p className="mt-2 px-1 text-[0.85rem] font-medium text-ink-soft">
-            {t("farm.sourceOpenMeteo")} · {t("farm.updatedAt")} {updatedLabel}
-          </p>
         </div>
       </section>
 
@@ -278,9 +272,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
               })}
             </p>
           ) : null}
-          <p className="mt-2 px-1 text-[0.85rem] font-medium text-ink-soft">
-            {t("farm.sourceOpenMeteo")}
-          </p>
         </div>
       </section>
 
@@ -327,79 +318,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
           </div>
         )}
 
-        {/* AgroMonitoring — real field-level satellite observation */}
-        <div className="card mt-3 !pt-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-[1rem] font-extrabold text-ink">
-              <SatelliteIcon size={18} className="text-primary" />
-              {t("farm.agroTitle")}
-            </h3>
-            {agroBusy ? <LoadingState message={t("farm.agroChecking")} /> : null}
-          </div>
-          {agro && agro.ok && agro.imagery ? (
-            <>
-              {agro.polyId ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/agromonitoring/image?polyid=${encodeURIComponent(agro.polyId)}&dt=${agro.imagery.dt}`}
-                  alt={t("farm.agroImageAlt")}
-                  className="mt-3 w-full rounded-2xl border border-earth/20 bg-bg object-contain"
-                  loading="lazy"
-                />
-              ) : null}
-              <ul className="mt-3 flex flex-col gap-1.5 text-[0.95rem] text-ink">
-                <li className="flex items-center justify-between gap-2 rounded-xl bg-bg px-3 py-2">
-                  <span className="font-semibold text-ink-soft">{t("farm.agroObsDate")}</span>
-                  <span className="font-extrabold text-ink">{formatObsDate(agro.imagery.dt, lang)}</span>
-                </li>
-                <li className="flex items-center justify-between gap-2 rounded-xl bg-bg px-3 py-2">
-                  <span className="font-semibold text-ink-soft">{t("farm.agroSatellite")}</span>
-                  <span className="font-extrabold text-ink">{agro.imagery.satellite}</span>
-                </li>
-                {agro.imagery.cloudPct !== null ? (
-                  <li className="flex items-center justify-between gap-2 rounded-xl bg-bg px-3 py-2">
-                    <span className="font-semibold text-ink-soft">{t("farm.agroCloud")}</span>
-                    <span className="font-extrabold text-ink">{agro.imagery.cloudPct}%</span>
-                  </li>
-                ) : null}
-                {agro.imagery.coveragePct !== null ? (
-                  <li className="flex items-center justify-between gap-2 rounded-xl bg-bg px-3 py-2">
-                    <span className="font-semibold text-ink-soft">{t("farm.agroCoverage")}</span>
-                    <span className="font-extrabold text-ink">{agro.imagery.coveragePct}%</span>
-                  </li>
-                ) : null}
-              </ul>
-              <p className="mt-2 px-1 text-[0.85rem] font-medium text-ink-soft">
-                {t("farm.sourceAgroMonitoring")} · {t("farm.satelliteObservationLine")}
-              </p>
-            </>
-          ) : agroFailed || (agro && !agro.ok) ? (
-            <p className="mt-2 rounded-2xl bg-bg px-3 py-2.5 text-[0.95rem] font-semibold leading-relaxed text-ink-soft">
-              {t("farm.agroUnavailable")}
-            </p>
-          ) : (
-            <p className="mt-2 rounded-2xl bg-bg px-3 py-2.5 text-[0.95rem] font-semibold leading-relaxed text-ink-soft">
-              {t("farm.agroWaiting")}
-            </p>
-          )}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={props.onRefreshAgro}
-              disabled={agroBusy}
-            >
-              <RefreshIcon size={18} />
-              {agroBusy ? t("farm.agroChecking") : t("farm.refreshSatellite")}
-            </button>
-            {agro?.configured === false || agroFailed ? (
-              <span className="inline-flex items-center gap-1 text-[0.88rem] font-semibold text-warning">
-                <InfoIcon size={15} />
-                {t("farm.agroNotConfigured")}
-              </span>
-            ) : null}
-          </div>
-        </div>
       </section>
 
       {/* CROP HEALTH */}
@@ -530,9 +448,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
                 </div>
               ) : null}
 
-              <p className="mt-3 rounded-2xl border border-dashed border-earth/30 bg-earth-light/50 px-3 py-2.5 text-[0.9rem] font-medium leading-relaxed text-ink">
-                {t("farm.satelliteHonesty")}
-              </p>
             </>
           ) : (
             <p className="text-[0.98rem] font-semibold leading-relaxed text-ink-soft">
@@ -561,9 +476,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
               </li>
             ))}
           </ul>
-          <p className="mt-3 px-1 text-[0.85rem] font-medium text-ink-soft">
-            {t("farm.soilMoistureNote")}
-          </p>
         </div>
       </section>
 
@@ -572,7 +484,7 @@ export default function FarmDashboard(props: FarmDashboardProps) {
         <SectionTitle icon={<InfoIcon size={20} />} text={t("weather.warningsTitle")} />
         {importantWarnings.length > 0 ? (
           <div className="flex flex-col gap-2">
-            {importantWarnings.map((w, i) => (
+            {importantWarnings.slice(0, 3).map((w, i) => (
               <WeatherWarningBanner key={i} severity={w.severity} message={w.message} />
             ))}
           </div>
@@ -581,11 +493,6 @@ export default function FarmDashboard(props: FarmDashboardProps) {
             {t("weather.noWarnings")}
           </p>
         )}
-        {infoNotes.length > 0 ? (
-          <p className="mt-2 rounded-2xl bg-info-light px-3 py-2 text-[0.9rem] font-medium leading-relaxed text-info">
-            {infoNotes.map((n) => n.message).join(" · ")}
-          </p>
-        ) : null}
       </section>
 
       {/* DETAILS — data transparency */}
@@ -654,16 +561,10 @@ export default function FarmDashboard(props: FarmDashboardProps) {
                 />
               ) : null}
             </dl>
-            <p className="mt-3 border-t border-earth/10 pt-2 text-[0.85rem] font-medium text-ink-soft">
-              {t("farm.satelliteHonesty")}
-            </p>
           </div>
         ) : null}
       </section>
 
-      <p className="px-2 text-center text-[0.9rem] font-medium leading-relaxed text-ink-soft">
-        {t("common.expertLine")}
-      </p>
     </div>
   );
 }

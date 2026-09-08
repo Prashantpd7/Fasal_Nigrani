@@ -24,7 +24,11 @@ const MAX_HISTORY = 10;
  * knowledge verification) and the result becomes context for follow-ups. A
  * "Summary" button produces the short end-of-conversation summary.
  */
-export default function ChatPage() {
+export default function ChatPage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+} = {}) {
   const { t, lang, dict } = useI18n();
 
   // Derived on every render (localStorage reads are tiny and synchronous), so
@@ -183,7 +187,7 @@ export default function ChatPage() {
   const hasContext = Boolean(context.weather || context.photo);
 
   return (
-    <PageShell title={t("chat.title")} subtitle={t("chat.subtitle")} backHref="/">
+    <PageShell embedded={embedded} title={t("chat.title")} subtitle={t("chat.subtitle")}>
       {hasContext ? (
         <div className="flex flex-wrap gap-2" aria-label="context">
           {context.weather ? (

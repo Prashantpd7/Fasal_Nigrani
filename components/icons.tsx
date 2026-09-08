@@ -356,11 +356,11 @@ export const SoilIcon = (p: IconProps) => (
 );
 
 export const GovernmentIcon = (p: IconProps) => (
-  <svg {...base(p)} fill="currentColor" stroke="none">
-    <path d="M3 20.5h18" />
-    <path d="M4.4 12.2h15.2" />
-    <path d="M5.6 14.8h12.8" />
-    <path d="M12 2.3l.9 2.2h8.2M2.9 7.4v4.8M21.1 7.4v4.8M5.2 2.3v13.5M18.8 2.3v13.5" />
+  <svg {...base(p)}>
+    <path d="m3 8.5 9-5 9 5H3Z" fill="currentColor" stroke="none" />
+    <path d="M4 10.5h16M5.5 10.5v7.5M9 10.5v7.5M12 10.5v7.5M15 10.5v7.5M18.5 10.5v7.5M3 20h18" />
+    <circle cx="12" cy="7" r="1.3" />
+    <path d="M12 5.7v2.6M10.8 7h2.4" />
   </svg>
 );
 

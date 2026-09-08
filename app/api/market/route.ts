@@ -5,7 +5,6 @@ import type { MarketPayload } from "@/lib/types";
 import {
   AgmarknetError,
   fetchMarketPrices,
-  getDemoMarketPrices,
   resolveCommodity,
 } from "@/lib/server/agmarknetService";
 
@@ -17,8 +16,8 @@ function sanitizeLang(raw: string | null): Lang {
 
 /**
  * Market (मंडी भाव) API — live prices from Agmarknet (Ministry of Agriculture
- * & Farmers Welfare, Govt of India). On network failure it returns clearly
- * labelled demo data (same shape), following the app's honest-fallback rule.
+ * & Farmers Welfare, Govt of India). It never substitutes generated prices
+ * when the official service is unavailable.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -41,14 +40,6 @@ export async function GET(request: Request) {
   }
 
   try {
-    if (process.env.DEMO_MODE === "true") {
-      return NextResponse.json(
-        await getDemoMarketPrices(
-          lang === "hi" ? catalogRec.hi : catalogRec.en,
-          "Rajasthan"
-        )
-      );
-    }
     const resolved = await resolveCommodity(catalogRec.agmarknetName);
     if (!resolved) {
       return NextResponse.json(
@@ -71,7 +62,8 @@ export async function GET(request: Request) {
   } catch (e) {
     if (e instanceof AgmarknetError) {
       return NextResponse.json(
-        await getDemoMarketPrices(lang === "hi" ? catalogRec.hi : catalogRec.en, "Rajasthan")
+        { error: "unavailable", message: "Agmarknet is temporarily unavailable" },
+        { status: 503 }
       );
     }
     return NextResponse.json(

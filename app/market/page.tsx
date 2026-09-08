@@ -27,7 +27,11 @@ interface StateRec {
   name: string;
 }
 
-export default function MarketPage() {
+export default function MarketPage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+} = {}) {
   const { t, lang } = useI18n();
   const [states, setStates] = useState<StateRec[]>([]);
   const [stateId, setStateId] = useState(29); // Rajasthan default
@@ -243,17 +247,12 @@ export default function MarketPage() {
     </div>
   );
 
-  const renderList = (mandis: MarketPayload["mandis"], demo: boolean) => (
+  const renderList = (mandis: MarketPayload["mandis"]) => (
     <>
       <div className="hidden lg:block">{tableRows(mandis)}</div>
       <div className="flex flex-col gap-4 lg:hidden">
         {mandis.map((m, i) => row(m, i))}
       </div>
-      {demo ? (
-        <NoticeBox icon={<InfoIcon size={20} />} tone="warning">
-          {t("common.demoDataNote")}
-        </NoticeBox>
-      ) : null}
       {mandis.length > 40 ? (
         <p className="rounded-2xl bg-bg px-4 py-2.5 text-center text-[0.92rem] font-semibold text-ink-soft">
           {t("market.showingTop")}
@@ -263,7 +262,7 @@ export default function MarketPage() {
   );
 
   return (
-    <PageShell title={t("market.title")} subtitle={t("market.subtitle")} backHref="/">
+    <PageShell embedded={embedded} title={t("market.title")} subtitle={t("market.subtitle")}>
       <section className="card-sm" aria-label={t("market.commodityLabel")}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
           {states.length > 0 ? (
@@ -363,7 +362,7 @@ export default function MarketPage() {
                 <RupeeIcon size={19} className="text-primary" />
                 {t("market.mandiTitle")} — {shown.commodityName} ({shown.stateName})
               </h2>
-              {renderList(shown.mandis.slice(0, 60), false)}
+              {renderList(shown.mandis.slice(0, 60))}
             </>
           ) : (
             <>
@@ -371,7 +370,7 @@ export default function MarketPage() {
                 <RupeeIcon size={19} className="text-primary" />
                 {t("market.mandiTitle")} — {shown.commodityName} ({shown.stateName})
               </h2>
-              {renderList(shown.mandis, true)}
+              {renderList(shown.mandis)}
             </>
           )}
 

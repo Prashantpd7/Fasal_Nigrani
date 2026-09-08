@@ -12,8 +12,8 @@ export async function GET() {
   } catch (e) {
     if (e instanceof AgmarknetError) {
       return NextResponse.json(
-        { source: "demo", states: [{ id: 29, name: "Rajasthan" }] },
-        { status: 200 }
+        { error: "unavailable", message: "Agmarknet is temporarily unavailable" },
+        { status: 503 }
       );
     }
     return NextResponse.json(

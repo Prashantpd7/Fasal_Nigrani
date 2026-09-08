@@ -16,7 +16,6 @@ import {
   cacheWeather,
   readCachedAgroMonitoring,
   readCachedAgroPolyId,
-  readCachedFarmState,
   readCachedWeather,
 } from "@/lib/clientStore";
 import { cacheSatelliteStatus, readCachedSatelliteStatus } from "@/lib/clientStore";
@@ -57,7 +56,7 @@ interface LoadedResult {
   stale: boolean;
 }
 
-export default function WeatherPage() {
+export default function WeatherPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { t, lang } = useI18n();
   const [step, setStep] = useState<Step>("location");
   const [pending, setPending] = useState<GeoPick | null>(null);
@@ -149,32 +148,6 @@ export default function WeatherPage() {
     []
   );
 
-  // Restore a previously saved farm on mount (location + field + crop).
-  useEffect(() => {
-    const saved = readCachedFarmState();
-    if (saved) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration sync of an external preference (localStorage); no cascading updates.
-      setFarm(saved);
-      const savedPlace: GeoPick = {
-        key: saved.key,
-        label: saved.label,
-        lat: saved.lat,
-        lon: saved.lon,
-      };
-      setPlace(savedPlace);
-      placeRef.current = savedPlace;
-      // Weather cache (same-language) restores the dashboard instantly.
-      const cached = readCachedWeather(saved.key);
-      if (cached && cached.lang === lang) {
-        setResult({ place: savedPlace, weather: cached.payload, stale: cached.stale });
-        setStep("dashboard");
-      } else {
-        setStep("dashboard");
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const loadWeather = useCallback(
     async (p: GeoPick) => {
       placeRef.current = p;
@@ -219,8 +192,9 @@ export default function WeatherPage() {
       }
       const res = await fetch("/api/satellite/status", { cache: "no-store" });
       const data = (await res.json()) as SatelliteStatus;
-      if (!res.ok || !data || !data.ok) throw new Error("satellite status");
-      cacheSatelliteStatus(data);
+      if (!res.ok || !data?.basemap?.tileUrl) throw new Error("satellite status");
+      setStatusFailed(!data.ok);
+      if (data.ok) cacheSatelliteStatus(data);
       setStatus(data);
     } catch {
       setStatusFailed(true);
@@ -323,7 +297,7 @@ export default function WeatherPage() {
   // ---------------------------------------------------------------- location
   if (step === "location") {
     return (
-      <PageShell title={t("weather.title")} subtitle={t("weather.subtitle")} backHref="/">
+      <PageShell embedded={embedded} title={t("weather.title")} subtitle={t("weather.subtitle")}>
         <LocationPicker
           onPick={(p) => {
             setPending(p);
@@ -337,7 +311,7 @@ export default function WeatherPage() {
   // ---------------------------------------------------------------- confirm
   if (step === "confirm" && pending) {
     return (
-      <PageShell title={t("weather.title")} subtitle={t("weather.subtitle")} backHref="/">
+      <PageShell embedded={embedded} title={t("weather.title")} subtitle={t("weather.subtitle")}>
         <section className="card text-center">
           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-light text-primary">
             <MapPinIcon size={30} />
@@ -378,7 +352,7 @@ export default function WeatherPage() {
   // ---------------------------------------------------------------- field
   if (step === "field" && place) {
     return (
-      <PageShell title={t("farm.fieldTitle")} subtitle={t("farm.fieldSubtitle")} backHref="/">
+      <PageShell embedded={embedded} title={t("farm.fieldTitle")} subtitle={t("farm.fieldSubtitle")}>
         <FarmMap
           center={{ lat: place.lat, lon: place.lon }}
           status={status}
@@ -397,9 +371,6 @@ export default function WeatherPage() {
             <CheckIcon size={20} />
             {t("farm.nextCrop")}
           </button>
-          <button type="button" className="btn-ghost w-full" onClick={() => setStep("crop")}>
-            {t("farm.skipField")}
-          </button>
         </div>
       </PageShell>
     );
@@ -408,7 +379,7 @@ export default function WeatherPage() {
   // ---------------------------------------------------------------- crop
   if (step === "crop" && place) {
     return (
-      <PageShell title={t("farm.cropTitle")} subtitle={t("farm.cropSubtitle")} backHref="/">
+      <PageShell embedded={embedded} title={t("farm.cropTitle")} subtitle={t("farm.cropSubtitle")}>
         <CropPicker
           selected={farm?.crop ?? null}
           onSelect={(id) => {
@@ -436,7 +407,7 @@ export default function WeatherPage() {
   // ---------------------------------------------------------------- dashboard
   if (busy && !result) {
     return (
-      <PageShell title={t("weather.title")} subtitle={t("weather.subtitle")} backHref="/">
+      <PageShell embedded={embedded} title={t("weather.title")} subtitle={t("weather.subtitle")}>
         <LoadingState message={t("weather.checking")} />
       </PageShell>
     );
@@ -444,7 +415,7 @@ export default function WeatherPage() {
 
   if (error && !result) {
     return (
-      <PageShell title={t("weather.title")} subtitle={t("weather.subtitle")} backHref="/">
+      <PageShell embedded={embedded} title={t("weather.title")} subtitle={t("weather.subtitle")}>
         <ErrorState message={error} onRetry={() => placeRef.current && void loadWeather(placeRef.current)} />
         <LocationPicker onPick={(p) => setPending(p)} />
       </PageShell>
@@ -453,14 +424,14 @@ export default function WeatherPage() {
 
   if (!result || !farm) {
     return (
-      <PageShell title={t("weather.title")} subtitle={t("weather.subtitle")} backHref="/">
+      <PageShell embedded={embedded} title={t("weather.title")} subtitle={t("weather.subtitle")}>
         <LocationPicker onPick={(p) => setPending(p)} />
       </PageShell>
     );
   }
 
   return (
-    <PageShell title={t("weather.title")} subtitle={t("weather.subtitle")} backHref="/">
+    <PageShell embedded={embedded} title={t("weather.title")}>
       <FarmDashboard
         farm={farm}
         weather={result.weather}

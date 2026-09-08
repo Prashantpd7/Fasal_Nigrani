@@ -40,7 +40,11 @@ const FIELDS: Field[] = [
 
 const defaults: SoilParams = { ph: null, ec: null, oc: null, n: null, p: null, k: null };
 
-export default function SoilPage() {
+export default function SoilPage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+} = {}) {
   const { t, lang } = useI18n();
   const [values, setValues] = useState<SoilParams>(defaults);
   const [stateName, setStateName] = useState("Rajasthan");
@@ -121,7 +125,7 @@ export default function SoilPage() {
   );
 
   return (
-    <PageShell title={t("soil.title")} subtitle={t("soil.subtitle")} backHref="/">
+    <PageShell embedded={embedded} title={t("soil.title")} subtitle={t("soil.subtitle")}>
       <NoticeBox icon={<InfoIcon size={20} />} tone="info">
         {t("soil.howTo")}
       </NoticeBox>

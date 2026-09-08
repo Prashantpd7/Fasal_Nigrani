@@ -39,7 +39,11 @@ const MAX_PHOTOS = 4;
  * if no AI key is configured the page shows a clear configuration notice for
  * developers and an honest note for the farmer.
  */
-export default function PhotoCheckPage() {
+export default function PhotoCheckPage({
+  embedded = false,
+}: {
+  embedded?: boolean;
+} = {}) {
   const { t, lang } = useI18n();
   const router = useRouter();
   const [view, setView] = useState<View>("idle");
@@ -168,9 +172,9 @@ export default function PhotoCheckPage() {
 
   return (
     <PageShell
+      embedded={embedded}
       title={t("photo.title")}
       subtitle={t("photo.subtitle")}
-      backHref="/"
     >
       {view === "busy" ? (
         <LoadingState message={busyMsg} detail={t("photo.analyzingDetail")} />
