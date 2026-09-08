@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useI18n } from "@/lib/I18nProvider";
 import { ChevronRightIcon } from "./icons";
 
 interface Props {
@@ -49,6 +50,7 @@ export default function BigActionCard({
   compact = false,
   external = false,
 }: Props) {
+  const { t } = useI18n();
   const a = accents[accent];
 
   if (compact) {
@@ -78,6 +80,7 @@ export default function BigActionCard({
   return (
     <Link
       href={href}
+      aria-label={external ? `${title} (${t("common.external")})` : undefined}
       className={`card-sm group flex min-h-24 cursor-pointer items-center gap-4 transition-colors ${a.ring}`}
     >
       <span

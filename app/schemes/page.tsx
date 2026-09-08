@@ -129,7 +129,7 @@ export default function SchemesPage() {
               {t("schemes.none")}
             </NoticeBox>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((s) => (
                 <article key={s.id} className="card-sm flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">

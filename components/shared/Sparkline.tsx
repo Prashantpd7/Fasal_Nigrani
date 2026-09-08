@@ -1,7 +1,5 @@
 "use client";
 
-import { useId } from "react";
-
 interface SparklineProps {
   /** Time-ordered numbers. Nulls are skipped (NR days). */
   values: (number | null)[];
@@ -25,7 +23,6 @@ export default function Sparkline({
   fillStroke = "var(--color-primary-light)",
   ariaLabel,
 }: SparklineProps) {
-  const uid = useId();
   const pts = values.filter((v) => v !== null);
   if (pts.length < 2) {
     return (

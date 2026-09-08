@@ -1,7 +1,6 @@
 "use client";
 
-import Header from "@/components/Header";
-import NavBar from "@/components/NavBar";
+import PageShell from "@/components/PageShell";
 import BigActionCard from "@/components/BigActionCard";
 import {
   CameraIcon,
@@ -17,25 +16,23 @@ import {
 import { useI18n } from "@/lib/I18nProvider";
 
 /**
- * Homepage v2 (§6, §9): the three core actions stay as large tappable tiles
- * and the new live government services (mandi prices, soil testing, gov
- * schemes) get their own grid — nothing is hidden behind a hamburger.
+ * Homepage v3 — a professional dashboard:
+ *  - welcome hero with quick status chips
+ *  - Weather as the large primary card
+ *  - Crop Photo + AI Assistant in a 2-col grid
+ *  - Mandi, Soil, Government Schemes in a responsive grid
+ *  Use the full desktop width; stack on mobile.
  */
 export default function HomePage() {
   const { t, dict } = useI18n();
   return (
-    <div className="flex min-h-dvh flex-col">
-      <Header />
-      <main className="mx-auto flex w-full max-w-[600px] flex-1 flex-col gap-4 px-4 pb-24 pt-4">
+    <PageShell>
+      <>
         {/* Hero */}
-        <section className="rounded-3xl bg-primary-light p-5 sm:p-6">
-          <h1 className="text-[1.7rem] font-extrabold leading-tight tracking-tight text-ink sm:text-[1.95rem]">
-            {t("home.heroTitle")}
-          </h1>
-          <p className="mt-2 text-[1rem] leading-relaxed text-ink-soft">
-            {t("home.heroSub")}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+        <section className="rounded-3xl bg-primary-light p-6 sm:p-8 lg:p-9">
+          <h1 className="page-title">{t("home.heroTitle")}</h1>
+          <p className="page-subtitle mt-1">{t("home.heroSub")}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
             <span className="chip bg-primary-light text-primary">
               <CloudRainIcon size={15} /> {t("home.metricWeather")}
             </span>
@@ -48,21 +45,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Core daily tools */}
+        {/* Daily tools */}
         <section aria-label={t("home.dailyTitle")}>
           <h2 className="section-head">
             <SproutIcon size={19} className="text-primary" />
             {t("home.dailyTitle")}
           </h2>
-          <div className="flex flex-col gap-3">
+
+          <div className="grid gap-3">
             <BigActionCard
               href="/weather"
               accent="blue"
-              icon={<CloudRainIcon size={28} />}
+              icon={<CloudRainIcon size={30} />}
               title={t("home.weatherCard.title")}
               desc={t("home.weatherCard.desc")}
             />
-            <div className="grid grid-cols-2 gap-3">
+
+            <div className="grid gap-3 sm:grid-cols-2">
               <BigActionCard
                 href="/photo-check"
                 accent="green"
@@ -93,10 +92,10 @@ export default function HomePage() {
               {t("home.liveBadge")}
             </span>
           </h2>
-          <p className="mt-1 text-[0.92rem] leading-relaxed text-ink-soft">
+          <p className="mt-1 text-[0.95rem] leading-relaxed text-ink-soft">
             {t("home.govSub")}
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <BigActionCard
               href="/market"
               accent="earth"
@@ -129,7 +128,7 @@ export default function HomePage() {
           <span className="mt-0.5 shrink-0 text-info">
             <InfoIcon size={22} />
           </span>
-          <div>
+          <div className="flex-1">
             <h2 className="text-[1rem] font-extrabold text-ink">
               {t("home.noteTitle")}
             </h2>
@@ -139,12 +138,13 @@ export default function HomePage() {
           </div>
         </section>
 
-        <footer className="text-center text-[0.85rem] font-semibold text-ink-soft">
+        <footer className="border-t border-earth/15 py-5 text-center text-[0.85rem] font-semibold text-ink-soft">
           <SproutIcon size={16} className="mx-auto mb-1 text-primary" />
-          Fasal Nigrani ({dict.brand.hiName}) — {t("common.expertLine")}
+          <span className="mx-auto inline-block max-w-xl">
+            Fasal Nigrani ({dict.brand.hiName}) — {t("common.expertLine")}
+          </span>
         </footer>
-      </main>
-      <NavBar />
-    </div>
+      </>
+    </PageShell>
   );
 }

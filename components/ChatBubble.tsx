@@ -12,7 +12,7 @@ export default function ChatBubble({ message }: { message: ChatMessage }) {
       role="log"
     >
       <div
-        className={`max-w-[85%] whitespace-pre-wrap rounded-3xl px-4 py-3 text-[1rem] leading-relaxed ${
+        className={`w-full md:w-[780px] whitespace-pre-wrap rounded-3xl px-4 py-3 text-[1rem] leading-relaxed ${
           isUser
             ? "rounded-br-md bg-primary text-white"
             : "rounded-bl-md border border-earth/15 bg-surface text-ink"

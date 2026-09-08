@@ -56,7 +56,7 @@ export default function NavBar() {
   return (
     <nav
       aria-label={t("nav.mainNav")}
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-[600px] items-stretch justify-between border-t border-earth/20 bg-surface/95 px-2 py-1.5 backdrop-blur-sm"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-[600px] items-stretch justify-between border-t border-earth/20 bg-surface/95 px-2 py-1.5 backdrop-blur-sm lg:hidden"
     >
       {items.map((item) => {
         const active = item.match(path);

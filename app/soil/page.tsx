@@ -49,24 +49,23 @@ export default function SoilPage() {
   const [error, setError] = useState<string | null>(null);
   const runId = useRef(0);
 
-  const qs = (p: SoilParams) =>
-    new URLSearchParams({
-      lang,
-      state: stateName,
-      ph: p.ph?.toString() ?? "",
-      ec: p.ec?.toString() ?? "",
-      oc: p.oc?.toString() ?? "",
-      n: p.n?.toString() ?? "",
-      p: p.p?.toString() ?? "",
-      k: p.k?.toString() ?? "",
-    });
-
+  /** Builds query params inline so no helper needs to be recreated per render. */
   const analyze = useCallback(
     (p: SoilParams) => {
       const id = ++runId.current;
       setBusy(true);
       setError(null);
-      fetch(`/api/soil?${qs(p)}`)
+      const params = new URLSearchParams({
+        lang,
+        state: stateName,
+        ph: p.ph?.toString() ?? "",
+        ec: p.ec?.toString() ?? "",
+        oc: p.oc?.toString() ?? "",
+        n: p.n?.toString() ?? "",
+        p: p.p?.toString() ?? "",
+        k: p.k?.toString() ?? "",
+      });
+      fetch(`/api/soil?${params}`)
         .then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
@@ -95,47 +94,62 @@ export default function SoilPage() {
       ? "bg-primary-light text-primary"
       : "bg-warning-light text-warning";
 
+  /** One soil input field with a visible label (never placeholder-only). */
+  const soilField = (f: Field) => (
+    <label key={f.key} className="flex flex-col gap-1">
+      <span className="text-[0.85rem] font-bold text-ink-soft">
+        {f.label}
+        {f.unit ? <span className="text-[0.75rem]"> ({f.unit})</span> : null}
+      </span>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={f.min}
+        max={f.max}
+        step={f.step}
+        placeholder={f.placeholder}
+        value={values[f.key]?.toString() ?? ""}
+        onChange={(e) => {
+          const raw = e.target.value;
+          const next = { ...values };
+          next[f.key] = raw === "" ? null : Number(raw);
+          setValues(next);
+        }}
+        className="input-base font-bold"
+      />
+    </label>
+  );
+
   return (
     <PageShell title={t("soil.title")} subtitle={t("soil.subtitle")} backHref="/">
       <NoticeBox icon={<InfoIcon size={20} />} tone="info">
         {t("soil.howTo")}
       </NoticeBox>
 
-      <div className="card-sm">
+      <section className="card-sm">
         <SectionHeader icon={<FlaskIcon size={20} />} text={t("soil.enterTitle")} hint={t("soil.enterHint")} />
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {FIELDS.map((f) => (
-            <label key={f.key} className="flex flex-col gap-1">
-              <span className="text-[0.85rem] font-bold text-ink-soft">
-                {f.label}
-                {f.unit ? <span className="text-[0.75rem]"> ({f.unit})</span> : null}
-              </span>
-              <input
-                type="number"
-                inputMode="decimal"
-                min={f.min}
-                max={f.max}
-                step={f.step}
-                placeholder={f.placeholder}
-                value={values[f.key]?.toString() ?? ""}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  const next = { ...values };
-                  next[f.key] = raw === "" ? null : Number(raw);
-                  setValues(next);
-                }}
-                className="min-h-12 w-full rounded-2xl border border-earth/30 bg-surface px-3 text-[1rem] font-bold text-ink"
-              />
-            </label>
-          ))}
+
+        <h3 className="mt-4 text-[0.95rem] font-bold text-ink-soft">
+          {t("soil.groupChemistry")}
+        </h3>
+        <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {FIELDS.filter((f) => ["ph", "ec", "oc"].includes(f.key)).map((f) => soilField(f))}
         </div>
-        <label className="mt-3 flex flex-col gap-1.5">
+
+        <h3 className="mt-4 text-[0.95rem] font-bold text-ink-soft">
+          {t("soil.groupNutrients")}
+        </h3>
+        <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {FIELDS.filter((f) => ["n", "p", "k"].includes(f.key)).map((f) => soilField(f))}
+        </div>
+
+        <label className="mt-4 flex flex-col gap-1.5">
           <span className="field-label">{t("soil.stateLabel")}</span>
           <input
             type="text"
             value={stateName}
             onChange={(e) => setStateName(e.target.value)}
-            className="min-h-12 w-full rounded-2xl border border-earth/30 bg-surface px-3 text-[1rem] font-bold text-ink"
+            className="input-base font-bold"
           />
         </label>
         <button
@@ -150,7 +164,7 @@ export default function SoilPage() {
         {!anyEntered ? (
           <p className="mt-2 text-[0.85rem] font-semibold text-ink-soft">{t("soil.needOne")}</p>
         ) : null}
-      </div>
+      </section>
 
       {busy ? <LoadingState message={t("soil.checking")} /> : null}
       {error ? <ErrorState message={error} onRetry={() => analyze(values)} /> : null}
@@ -176,7 +190,7 @@ export default function SoilPage() {
             <FlaskIcon size={19} className="text-primary" />
             {t("soil.factorsTitle")}
           </h2>
-          <dl className="flex flex-col gap-3">
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {result.result.factors.map((f) => (
               <div key={f.param} className="card-sm flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
@@ -215,7 +229,7 @@ export default function SoilPage() {
             <MicroscopeIcon size={19} className="text-primary" />
             {t("soil.labsTitle")}
           </h2>
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {result.labs.map((lab) => (
               <a
                 key={lab.name}

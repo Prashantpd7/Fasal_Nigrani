@@ -83,17 +83,55 @@ export default function MarketPage() {
   /** Non-null alias — TS narrows cleanly inside the JSX below. */
   const shown = result;
 
+  /** Aggregate dashboards values across every reported mandi. */
+  const summary =
+    shown && !shown.empty
+      ? (() => {
+          const modals = shown.mandis
+            .map((m) => m.latest.modal)
+            .filter((v): v is number => v !== null);
+          const totalArr = shown.mandis.reduce(
+            (s, m) => s + (m.latest.arrivalsMt ?? 0),
+            0
+          );
+          return {
+            modalAvg:
+              modals.length
+                ? Math.round(
+                    modals.reduce((a, b) => a + b, 0) / modals.length
+                  )
+                : null,
+            min: modals.length ? Math.min(...modals) : null,
+            max: modals.length ? Math.max(...modals) : null,
+            totalArr: totalArr > 0 ? Math.round(totalArr) : null,
+            markets: modals.length,
+          };
+        })()
+      : null;
+
+  const dirInfo = (
+    latest: number | null,
+    prev: number | null
+  ): { icon: React.ReactNode; tint: string; label: string } => {
+    if (latest !== null && prev !== null && latest > prev)
+      return {
+        icon: <TrendUpIcon size={16} />,
+        tint: "text-success",
+        label: `+${(latest - prev).toLocaleString("en-IN")}`,
+      };
+    if (latest !== null && prev !== null && latest < prev)
+      return {
+        icon: <TrendDownIcon size={16} />,
+        tint: "text-danger",
+        label: `${(latest - prev).toLocaleString("en-IN")}`,
+      };
+    return { icon: <LeverIcon size={16} />, tint: "text-ink-soft", label: "·" };
+  };
+
   const row = (m: MarketPayload["mandis"][number], i: number) => {
     const latest = m.latest.modal;
     const prev = m.previous?.modal ?? null;
-    const dir =
-      latest !== null && prev !== null
-        ? latest > prev ? "up" : latest < prev ? "down" : "flat"
-        : "flat";
-    const dirIcon =
-      dir === "up" ? <TrendUpIcon size={16} /> : dir === "down" ? <TrendDownIcon size={16} /> : <LeverIcon size={16} />;
-    const dirTint =
-      dir === "up" ? "text-success" : dir === "down" ? "text-danger" : "text-ink-soft";
+    const d = dirInfo(latest, prev);
     return (
       <article key={`${m.name}-${i}`} className="card-sm flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
@@ -136,11 +174,9 @@ export default function MarketPage() {
             height={36}
             ariaLabel={`${m.name} ${t("market.trendLabel")}`}
           />
-          <span className={`inline-flex items-center gap-1 text-[0.82rem] font-bold ${dirTint}`}>
-            {dirIcon}
-            {latest !== null && prev !== null
-              ? `${latest >= prev ? "+" : ""}${(latest - prev).toLocaleString("en-IN")}`
-              : "·"}
+          <span className={`inline-flex items-center gap-1 text-[0.82rem] font-bold ${d.tint}`}>
+            {d.icon}
+            {d.label}
           </span>
           <span className="text-[0.78rem] font-semibold text-ink-soft">{m.daysReported}/{t("market.daysWeek")}</span>
         </div>
@@ -151,48 +187,122 @@ export default function MarketPage() {
       </article>
     );
   };
+/** Desktop table of mandi rows (hidden on mobile where cards are used). */
+  const tableRows = (mandis: MarketPayload["mandis"]) => (
+    <div className="table-wrap">
+      <table className="w-full border-collapse text-left text-[0.95rem]">
+        <thead>
+          <tr className="border-b border-earth/15 bg-bg text-[0.85rem] font-semibold text-ink-soft">
+            <th className="px-4 py-2.5">{t("market.tableMarket")}</th>
+            <th className="px-4 py-2.5 text-right">{t("market.modalPrice")} (₹/qtl)</th>
+            <th className="px-4 py-2.5 text-right">{t("market.range")} (₹)</th>
+            <th className="px-4 py-2.5 text-right">{t("market.arrivals")} (MT)</th>
+            <th className="px-4 py-2.5">{t("market.trendLabel")}</th>
+            <th className="px-4 py-2.5 text-center">{t("market.daysWeek")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {mandis.map((m, i) => {
+            const latest = m.latest.modal;
+            const prev = m.previous?.modal ?? null;
+            const d = dirInfo(latest, prev);
+            return (
+              <tr key={`${m.name}-${i}`} className="border-b border-earth/10 hover:bg-primary-light/30">
+                <td className="px-4 py-2.5">
+                  <span className="block font-bold text-ink">{m.name}</span>
+                  {m.latestDate ? (
+                    <span className="block text-[0.8rem] text-ink-soft">📅 {m.latestDate}</span>
+                  ) : null}
+                </td>
+                <td className="px-4 py-2.5 text-right font-extrabold text-ink">
+                  {latest !== null ? latest.toLocaleString("en-IN") : "—"}
+                </td>
+                <td className="px-4 py-2.5 text-right text-ink">
+                  {m.latest.min !== null && m.latest.max !== null
+                    ? `${m.latest.min.toLocaleString("en-IN")}–${m.latest.max.toLocaleString("en-IN")}`
+                    : "—"}
+                </td>
+                <td className="px-4 py-2.5 text-right text-ink">
+                  {m.latest.arrivalsMt !== null ? m.latest.arrivalsMt.toLocaleString("en-IN") : "—"}
+                </td>
+                <td className="px-4 py-2.5">
+                  <span className="flex items-center gap-2">
+                    <Sparkline values={m.trend} width={110} height={30} ariaLabel={`${m.name} ${t("market.trendLabel")}`} />
+                    <span className={`inline-flex items-center gap-1 text-[0.8rem] font-bold ${d.tint}`}>
+                      {d.icon}
+                      {d.label}
+                    </span>
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 text-center text-ink-soft">{m.daysReported}/7</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderList = (mandis: MarketPayload["mandis"], demo: boolean) => (
+    <>
+      <div className="hidden lg:block">{tableRows(mandis)}</div>
+      <div className="flex flex-col gap-4 lg:hidden">
+        {mandis.map((m, i) => row(m, i))}
+      </div>
+      {demo ? (
+        <NoticeBox icon={<InfoIcon size={20} />} tone="warning">
+          {t("common.demoDataNote")}
+        </NoticeBox>
+      ) : null}
+      {mandis.length > 40 ? (
+        <p className="rounded-2xl bg-bg px-4 py-2.5 text-center text-[0.92rem] font-semibold text-ink-soft">
+          {t("market.showingTop")}
+        </p>
+      ) : null}
+    </>
+  );
 
   return (
     <PageShell title={t("market.title")} subtitle={t("market.subtitle")} backHref="/">
-      {states.length > 0 ? (
-        <label className="flex flex-col gap-1.5">
-          <span className="field-label">{t("market.stateLabel")}</span>
-          <select
-            value={stateId}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              setStateId(next);
-              load(next, crop);
-            }}
-            className="min-h-12 w-full cursor-pointer rounded-2xl border border-earth/30 bg-surface px-3.5 text-[1rem] font-bold text-ink"
-          >
-            {states.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-
-      <div
-        role="group"
-        aria-label={t("market.commodityLabel")}
-        className="flex flex-wrap items-center gap-2"
-      >
-        {POPULAR_COMMODITIES.map((c) => (
-          <FilterChip
-            key={c.id}
-            label={commodityLabel(c, lang)}
-            emoji={c.emoji}
-            active={crop === c.id}
-            onClick={() => {
-              setCrop(c.id);
-              load(stateId, c.id);
-            }}
-          />
-        ))}
-      </div>
+      <section className="card-sm" aria-label={t("market.commodityLabel")}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+          {states.length > 0 ? (
+            <label className="flex min-w-64 flex-col gap-1.5">
+              <span className="field-label">{t("market.stateLabel")}</span>
+              <select
+                value={stateId}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  setStateId(next);
+                  load(next, crop);
+                }}
+                className="input-base cursor-pointer font-bold"
+              >
+                {states.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <p className="sr-only">{t("market.commodityLabel")}</p>
+        </div>
+        <div role="group" aria-label={t("market.commodityLabel")} className="mt-3 flex flex-wrap items-center gap-2">
+          {POPULAR_COMMODITIES.map((c) => (
+            <FilterChip
+              key={c.id}
+              label={commodityLabel(c, lang)}
+              emoji={c.emoji}
+              active={crop === c.id}
+              onClick={() => {
+                setCrop(c.id);
+                load(stateId, c.id);
+              }}
+            />
+          ))}
+        </div>
+      </section>
 
       {busy && !result ? <LoadingState message={t("market.checking")} /> : null}
       {error ? <ErrorState message={error ?? ""} onRetry={refresh} /> : null}
@@ -212,6 +322,37 @@ export default function MarketPage() {
             </span>
           </div>
 
+          {summary ? (
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="stat-pill">
+                <dt className="sr-only">{t("market.modalPrice")}</dt>
+                <dd className="text-[1.25rem] font-extrabold text-primary">
+                  ₹{summary.modalAvg !== null ? summary.modalAvg.toLocaleString("en-IN") : "—"}
+                </dd>
+                <p className="mt-0.5 text-[0.8rem] font-semibold text-ink-soft">{t("market.modalPrice")} · {t("market.avgLabel")}</p>
+              </div>
+              <div className="stat-pill">
+                <dt className="sr-only">{t("market.range")}</dt>
+                <dd className="text-[1.1rem] font-extrabold text-ink">
+                  ₹{summary.min !== null && summary.max !== null ? `${summary.min.toLocaleString("en-IN")}–${summary.max.toLocaleString("en-IN")}` : "—"}
+                </dd>
+                <p className="mt-0.5 text-[0.8rem] font-semibold text-ink-soft">{t("market.range")}</p>
+              </div>
+              <div className="stat-pill">
+                <dt className="sr-only">{t("market.totalArrivals")}</dt>
+                <dd className="text-[1.1rem] font-extrabold text-earth">
+                  {summary.totalArr !== null ? `${summary.totalArr.toLocaleString("en-IN")} MT` : "—"}
+                </dd>
+                <p className="mt-0.5 text-[0.8rem] font-semibold text-ink-soft">{t("market.totalArrivals")}</p>
+              </div>
+              <div className="stat-pill">
+                <dt className="sr-only">{t("market.marketsReported")}</dt>
+                <dd className="text-[1.1rem] font-extrabold text-ink">{summary.markets}</dd>
+                <p className="mt-0.5 text-[0.8rem] font-semibold text-ink-soft">{t("market.marketsReported")}</p>
+              </div>
+            </dl>
+          ) : null}
+
           {shown.empty ? (
             <NoticeBox icon={<InfoIcon size={20} />} tone="warning">
               {t("market.noReportHint")}
@@ -222,14 +363,7 @@ export default function MarketPage() {
                 <RupeeIcon size={19} className="text-primary" />
                 {t("market.mandiTitle")} — {shown.commodityName} ({shown.stateName})
               </h2>
-              <div className="flex flex-col gap-4">
-                {shown.mandis.slice(0, 40).map((m, i) => row(m, i))}
-              </div>
-              {shown.mandis.length > 40 ? (
-                <p className="text-center text-[0.9rem] font-semibold text-ink-soft">
-                  {t("market.showingTop")}
-                </p>
-              ) : null}
+              {renderList(shown.mandis.slice(0, 60), false)}
             </>
           ) : (
             <>
@@ -237,12 +371,7 @@ export default function MarketPage() {
                 <RupeeIcon size={19} className="text-primary" />
                 {t("market.mandiTitle")} — {shown.commodityName} ({shown.stateName})
               </h2>
-              <div className="flex flex-col gap-4">
-                {shown.mandis.map((m, i) => row(m, i))}
-              </div>
-              <NoticeBox icon={<InfoIcon size={20} />} tone="warning">
-                {t("common.demoDataNote")}
-              </NoticeBox>
+              {renderList(shown.mandis, true)}
             </>
           )}
 

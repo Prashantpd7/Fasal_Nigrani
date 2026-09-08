@@ -257,14 +257,14 @@ export default function ChatPage() {
             ))}
             {thinking ? (
               <div className="flex justify-start">
-                <div className="attention-pulse max-w-[85%] rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft">
+                <div className="attention-pulse w-full md:w-[780px] rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft">
                   {t("chat.thinking")}
                 </div>
               </div>
             ) : null}
             {attaching ? (
               <div className="flex justify-start">
-                <div className="attention-pulse max-w-[85%] rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft">
+                <div className="attention-pulse w-full md:w-[780px] rounded-3xl rounded-bl-md border border-earth/15 bg-surface px-4 py-3 text-[0.98rem] font-semibold text-ink-soft">
                   {t("chat.photoAnalyzing")}
                 </div>
               </div>

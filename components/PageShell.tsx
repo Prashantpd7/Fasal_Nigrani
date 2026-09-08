@@ -8,16 +8,18 @@ import { ArrowLeftIcon } from "./icons";
 import { useI18n } from "@/lib/I18nProvider";
 
 interface PageShellProps {
-  title: string;
+  title?: string;
   subtitle?: string;
-  backHref: string;
+  backHref?: string;
   children: ReactNode;
 }
 
 /**
- * Single-column, mobile-first shell (§10): content is capped at ~600px and
- * centered even on desktop — never a dashboard grid. Every feature page is
- * ≤2 taps from the homepage (§9).
+ * Responsive application shell (v3). The container expands to the full
+ * viewport (capped at 1280px) on desktop, so pages become real dashboards
+ * instead of a 600px mobile column. On mobile the back button and bottom nav
+ * keep the one-tap navigation philosophy. Every feature page uses this shell,
+ * so header / width / rhythm / typography stay identical app-wide.
  */
 export default function PageShell({
   title,
@@ -27,25 +29,27 @@ export default function PageShell({
 }: PageShellProps) {
   const { t } = useI18n();
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col bg-bg">
       <Header />
-      <main className="mx-auto flex w-full max-w-[600px] flex-1 flex-col px-4 pb-20 pt-4">
-        <Link
-          href={backHref}
-          className="mb-3 inline-flex h-11 w-fit cursor-pointer items-center gap-1.5 rounded-full px-3 text-[0.95rem] font-semibold text-primary hover:bg-primary-light/60"
-        >
-          <ArrowLeftIcon size={18} />
-          {t("common.back")}
-        </Link>
-        <h1 className="text-[1.65rem] font-extrabold leading-snug tracking-tight text-ink">
-          {title}
-        </h1>
-        {subtitle ? (
-          <p className="mt-1 text-[1.02rem] leading-relaxed text-ink-soft">
-            {subtitle}
-          </p>
+      <main className="app-main">
+        {title ? (
+          <div className="flex flex-col gap-3">
+            {backHref ? (
+              <Link
+                href={backHref}
+                className="inline-flex h-11 w-fit cursor-pointer items-center gap-1.5 rounded-full px-3 text-[0.95rem] font-semibold text-primary hover:bg-primary-light/60 lg:hidden"
+              >
+                <ArrowLeftIcon size={18} />
+                {t("common.back")}
+              </Link>
+            ) : null}
+            <h1 className="page-title">{title}</h1>
+            {subtitle ? (
+              <p className="page-subtitle">{subtitle}</p>
+            ) : null}
+          </div>
         ) : null}
-        <div className="mt-5 flex flex-col gap-4">{children}</div>
+        <div className="flex flex-col gap-4">{children}</div>
       </main>
       <NavBar />
     </div>

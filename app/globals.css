@@ -139,6 +139,50 @@
   .field-label {
     @apply block text-[0.95rem] font-semibold text-ink-soft;
   }
+
+  /* =====================================================================
+     v3 — responsive application shell (desktop-wide, mobile-first)
+     ===================================================================== */
+
+  /* Sticky top application bar — spans the full viewport. */
+  .app-header {
+    @apply sticky top-0 z-50 w-full border-b border-earth/15 bg-surface/95 backdrop-blur-sm;
+  }
+
+  /* Inner bar content: brand (left), nav, language (right). */
+  .app-header-inner {
+    @apply mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between gap-3 px-4 lg:px-6;
+  }
+
+  /* Primary content container — desktop uses the full viewport (capped at
+     1280px) instead of the old 600px mobile column. */
+  .app-main {
+    @apply mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-4 px-4 pb-24 pt-4 lg:px-6 lg:pt-6;
+  }
+
+  /* Desktop horizontal navigation link inside the header. */
+  .nav-link {
+    @apply inline-flex min-h-11 cursor-pointer select-none items-center gap-1.5 rounded-full px-3 text-[0.92rem] font-bold transition-colors;
+  }
+
+  /* Typography scale — clear hierarchy without oversized headings. */
+  .page-title {
+    @apply text-[1.9rem] font-bold tracking-tight text-ink sm:text-[2.05rem] lg:text-[2.15rem];
+  }
+
+  .page-subtitle {
+    @apply max-w-3xl text-[1.05rem] leading-relaxed text-ink-soft;
+  }
+
+  /* Standardised form control. */
+  .input-base {
+    @apply min-h-12 w-full rounded-xl border border-earth/30 bg-surface px-3.5 text-[1rem] text-ink placeholder:text-ink-soft/60 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+  }
+
+  /* Compact data row used inside tables / summary strips. */
+  .table-wrap {
+    @apply overflow-x-auto rounded-2xl border border-earth/15 bg-surface;
+  }
 }
 
 /* Subtle attention pulse used while an async action is running */
